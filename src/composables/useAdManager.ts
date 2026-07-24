@@ -48,16 +48,13 @@ export function useAdManager(config: AdConfig) {
   let isPreloading = false; // 是否正在预加载
   let preloadingPromise: Promise<void> | null = null; // 预加载Promise，用于等待预加载完成
   
-  // 广告位分组配置（穿山甲）- 智能瀑布流4个分组
+  // 广告位分组配置（穿山甲）- 智能瀑布流1个分组
   const AD_GROUPS = {
-    A: ['985736843'],     // 保价1500
-    B: ['985736857'],     // 保价500
-    C: ['985736858'],     // 保价100
-    D: ['985736871']      // 保价20
+    A: ['104282400']      // 保价1500
   };
   
   // 分组顺序（用于遍历）
-  const GROUP_ORDER = ['A', 'B', 'C', 'D'];
+  const GROUP_ORDER = ['A'];
   
   // 本地存储键名
   const SCHEDULER_STATE_KEY = 'ad_scheduler_state';
@@ -280,10 +277,7 @@ export function useAdManager(config: AdConfig) {
 
   const generateSimulatedEcpm = (slotId: string): number => {
     const ecpmRanges: { [key: string]: [number, number] } = {
-      '985736843': [1350, 1500],    // 保价1500
-      '985736857': [450, 500],      // 保价500
-      '985736858': [90, 100],        // 保价100
-      '985736871': [20, 30]          // 保价20
+      '104282400': [1350, 1500]      // 保价1500
     };
 
     const range = ecpmRanges[slotId];
