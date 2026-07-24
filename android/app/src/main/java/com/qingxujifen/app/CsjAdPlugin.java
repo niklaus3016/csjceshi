@@ -18,7 +18,11 @@ import com.bytedance.sdk.openadsdk.TTAdNative;
 import com.bytedance.sdk.openadsdk.TTAdSdk;
 import com.bytedance.sdk.openadsdk.TTAppDownloadListener;
 import com.bytedance.sdk.openadsdk.TTRewardVideoAd;
+import com.bytedance.sdk.openadsdk.mediation.manager.MediationRewardManager;
+import com.bytedance.sdk.openadsdk.mediation.adapter.MediationAdLoadInfo;
+import com.bytedance.sdk.openadsdk.mediation.adapter.MediationAdEcpmInfo;
 
+import java.util.List;
 import java.util.Map;
 
 @CapacitorPlugin(name = "CsjAd")
@@ -96,11 +100,23 @@ public class CsjAdPlugin extends Plugin {
                     
                     @Override
                     public void onRewardVideoAdLoad(TTRewardVideoAd ad) {
-                        double realEcpm = ad.getEcpm();
-                        mRealEcpm = realEcpm;
-                        Log.d(TAG, "广告加载成功, eCPM=" + realEcpm);
                         mRewardVideoAd = ad;
                         setupAdListener(ad);
+                        
+                        double realEcpm = 0;
+                        MediationRewardManager mediationManager = ad.getMediationManager();
+                        if (mediationManager != null) {
+                            List<MediationAdLoadInfo> adLoadInfo = mediationManager.getAdLoadInfo();
+                            if (adLoadInfo != null && !adLoadInfo.isEmpty()) {
+                                MediationAdEcpmInfo ecpmInfo = adLoadInfo.get(0).getMediationAdEcpmInfo();
+                                if (ecpmInfo != null) {
+                                    realEcpm = ecpmInfo.getEcpm();
+                                    Log.d(TAG, "聚合模式获取eCPM成功: " + realEcpm);
+                                }
+                            }
+                        }
+                        mRealEcpm = realEcpm;
+                        Log.d(TAG, "广告加载成功, eCPM=" + realEcpm);
                         
                         JSObject loadedResult = new JSObject();
                         loadedResult.put("ecpm", realEcpm);
