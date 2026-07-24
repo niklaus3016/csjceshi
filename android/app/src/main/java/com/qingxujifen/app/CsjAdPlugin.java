@@ -82,7 +82,6 @@ public class CsjAdPlugin extends Plugin {
                         .setRewardAmount(1)
                         .setRewardName("金币")
                         .setOrientation(TTAdConstant.VERTICAL)
-                        .setExtraObject("show_adn_load_error_detail", true)
                         .build();
                 
                 mTTAdNative.loadRewardVideoAd(adSlot, new TTAdNative.RewardVideoAdListener() {
