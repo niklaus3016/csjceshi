@@ -28,6 +28,7 @@ public class CsjAdPlugin extends Plugin {
     private TTAdNative mTTAdNative;
     private TTRewardVideoAd mRewardVideoAd;
     private PluginCall pendingShowCall;
+    private double mRealEcpm = 0;
     
     private TTAdInteractionListener mInteractionListener = new TTAdInteractionListener() {
         @Override
@@ -95,10 +96,15 @@ public class CsjAdPlugin extends Plugin {
                     
                     @Override
                     public void onRewardVideoAdLoad(TTRewardVideoAd ad) {
-                        Log.d(TAG, "广告加载成功");
+                        double realEcpm = ad.getEcpm();
+                        mRealEcpm = realEcpm;
+                        Log.d(TAG, "广告加载成功, eCPM=" + realEcpm);
                         mRewardVideoAd = ad;
                         setupAdListener(ad);
-                        notifyListeners("onAdLoaded", new JSObject());
+                        
+                        JSObject loadedResult = new JSObject();
+                        loadedResult.put("ecpm", realEcpm);
+                        notifyListeners("onAdLoaded", loadedResult);
                     }
                     
                     @Override
@@ -175,15 +181,12 @@ public class CsjAdPlugin extends Plugin {
                 JSObject result = new JSObject();
                 result.put("rewardVerify", isRewardValid);
                 
-                int ecpm = 0;
                 if (extraInfo != null) {
                     result.put("rewardAmount", extraInfo.getInt("reward_amount", 1));
                     result.put("rewardName", extraInfo.getString("reward_name", "金币"));
-                    ecpm = extraInfo.getInt("ecpm", 0);
-                    Log.d(TAG, "穿山甲返回ECPM: " + ecpm);
                 }
                 
-                result.put("ecpm", ecpm);
+                result.put("ecpm", mRealEcpm);
                 
                 notifyListeners("onRewardVerify", result);
                 
