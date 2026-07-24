@@ -71,7 +71,12 @@ android {
             if (file('release.keystore').exists()) {
                 signingConfig signingConfigs.release
             }
-        } 
+        }
+        debug {
+            if (file('release.keystore').exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
     } 
 }
 
