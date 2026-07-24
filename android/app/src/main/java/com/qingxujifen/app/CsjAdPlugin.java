@@ -19,10 +19,7 @@ import com.bytedance.sdk.openadsdk.TTAdSdk;
 import com.bytedance.sdk.openadsdk.TTAppDownloadListener;
 import com.bytedance.sdk.openadsdk.TTRewardVideoAd;
 import com.bytedance.sdk.openadsdk.mediation.manager.MediationRewardManager;
-import com.bytedance.sdk.openadsdk.mediation.adapter.MediationAdLoadInfo;
-import com.bytedance.sdk.openadsdk.mediation.adapter.MediationAdEcpmInfo;
 
-import java.util.List;
 import java.util.Map;
 
 @CapacitorPlugin(name = "CsjAd")
@@ -104,16 +101,24 @@ public class CsjAdPlugin extends Plugin {
                         setupAdListener(ad);
                         
                         double realEcpm = 0;
-                        MediationRewardManager mediationManager = ad.getMediationManager();
-                        if (mediationManager != null) {
-                            List<MediationAdLoadInfo> adLoadInfo = mediationManager.getAdLoadInfo();
-                            if (adLoadInfo != null && !adLoadInfo.isEmpty()) {
-                                MediationAdEcpmInfo ecpmInfo = adLoadInfo.get(0).getMediationAdEcpmInfo();
-                                if (ecpmInfo != null) {
-                                    realEcpm = ecpmInfo.getEcpm();
-                                    Log.d(TAG, "聚合模式获取eCPM成功: " + realEcpm);
+                        try {
+                            MediationRewardManager mediationManager = ad.getMediationManager();
+                            if (mediationManager != null) {
+                                Object adLoadInfo = mediationManager.getClass().getMethod("getAdLoadInfo").invoke(mediationManager);
+                                if (adLoadInfo != null && adLoadInfo instanceof java.util.List) {
+                                    java.util.List<?> infoList = (java.util.List<?>) adLoadInfo;
+                                    if (!infoList.isEmpty()) {
+                                        Object firstInfo = infoList.get(0);
+                                        Object ecpmInfo = firstInfo.getClass().getMethod("getMediationAdEcpmInfo").invoke(firstInfo);
+                                        if (ecpmInfo != null) {
+                                            realEcpm = (double) ecpmInfo.getClass().getMethod("getEcpm").invoke(ecpmInfo);
+                                            Log.d(TAG, "聚合模式获取eCPM成功: " + realEcpm);
+                                        }
+                                    }
                                 }
                             }
+                        } catch (Exception e) {
+                            Log.d(TAG, "反射获取eCPM失败: " + e.getMessage());
                         }
                         mRealEcpm = realEcpm;
                         Log.d(TAG, "广告加载成功, eCPM=" + realEcpm);
