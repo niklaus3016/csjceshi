@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 
+// 删除自适应图标配置文件
 task deleteAdaptiveIconConfigs {
     doLast {
         def filesToDelete = [
@@ -19,19 +20,19 @@ task deleteAdaptiveIconConfigs {
     }
 }
 
+// 在构建前执行删除任务
 preBuild.dependsOn deleteAdaptiveIconConfigs
 
 android { 
-    namespace = "com.gaoqianleme.app" 
+    namespace = "com.yuexuxingzuo.app" 
     compileSdk = rootProject.ext.compileSdkVersion 
     defaultConfig { 
-        applicationId "com.gaoqianleme.app" 
+        applicationId "com.yuexuxingzuo.app" 
         minSdkVersion rootProject.ext.minSdkVersion 
         targetSdkVersion rootProject.ext.targetSdkVersion 
         versionCode 1 
         versionName "V1.0" 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner" 
-        multiDexEnabled true
         aaptOptions { 
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps. 
              // Default: `https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61` 
@@ -44,11 +45,13 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     
+    // 确保使用AndroidX
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
     } 
     
+    // 添加签名配置
     signingConfigs {
         release {
             storeFile file('../my-release-key.keystore')
@@ -74,7 +77,6 @@ repositories {
     flatDir{ 
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs' 
     } 
-    maven { url 'https://artifact.bytedance.com/repository/AwemeOpenSDK' }
 }
 
 dependencies { 
@@ -87,15 +89,6 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion" 
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion" 
     implementation project(':capacitor-cordova-android-plugins') 
-    
-    implementation(name:'open_ad_sdk_7.6.4.3',ext:'aar')
-    
-    implementation 'com.google.android.gms:play-services-ads-identifier:18.0.1'
-    implementation 'com.google.android.gms:play-services-appset:16.0.2'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'com.google.android.material:material:1.11.0'
-    implementation 'com.squareup.okhttp3:okhttp:3.12.1'
-    implementation 'androidx.multidex:multidex:2.0.1'
 }
 
 apply from: 'capacitor.build.gradle'
