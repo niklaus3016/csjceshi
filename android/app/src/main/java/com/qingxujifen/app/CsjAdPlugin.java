@@ -9,14 +9,15 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.pangle.cn.pangleadsdk.AdSlot;
-import com.pangle.cn.pangleadsdk.PangleAdConstant;
-import com.pangle.cn.pangleadsdk.PangleAdInteractionListener;
-import com.pangle.cn.pangleadsdk.PangleAdLoadType;
-import com.pangle.cn.pangleadsdk.PangleAdManager;
-import com.pangle.cn.pangleadsdk.PangleAdNative;
-import com.pangle.cn.pangleadsdk.PangleAppDownloadListener;
-import com.pangle.cn.pangleadsdk.PangleRewardVideoAd;
+import com.bytedance.sdk.openadsdk.AdSlot;
+import com.bytedance.sdk.openadsdk.TTAdConstant;
+import com.bytedance.sdk.openadsdk.TTAdInteractionListener;
+import com.bytedance.sdk.openadsdk.TTAdLoadType;
+import com.bytedance.sdk.openadsdk.TTAdManager;
+import com.bytedance.sdk.openadsdk.TTAdNative;
+import com.bytedance.sdk.openadsdk.TTAdSdk;
+import com.bytedance.sdk.openadsdk.TTAppDownloadListener;
+import com.bytedance.sdk.openadsdk.TTRewardVideoAd;
 
 import java.util.Map;
 
@@ -24,22 +25,22 @@ import java.util.Map;
 public class CsjAdPlugin extends Plugin {
     
     private static final String TAG = "CsjAdPlugin";
-    private PangleAdNative mAdNative;
-    private PangleRewardVideoAd mRewardVideoAd;
+    private TTAdNative mTTAdNative;
+    private TTRewardVideoAd mRewardVideoAd;
     private PluginCall pendingShowCall;
     
-    private PangleAdInteractionListener mInteractionListener = new PangleAdInteractionListener() {
+    private TTAdInteractionListener mInteractionListener = new TTAdInteractionListener() {
         @Override
         public void onAdEvent(int code, Map map) {
             if (map == null) {
                 return;
             }
             switch (code) {
-                case PangleAdConstant.AD_EVENT_AUTH_DOUYIN:
+                case TTAdConstant.AD_EVENT_AUTH_DOUYIN:
                     String uid = (String) map.get("open_uid");
                     Log.d(TAG, "授权成功 --> uid：" + uid);
                     break;
-                case PangleAdConstant.AD_EVENT_EXCHANGE_COUPON_FINISH:
+                case TTAdConstant.AD_EVENT_EXCHANGE_COUPON_FINISH:
                     String isSuccess = String.valueOf(map.get("isSuccess"));
                     Log.d(TAG, "兑换结果：" + isSuccess);
                     break;
@@ -57,9 +58,9 @@ public class CsjAdPlugin extends Plugin {
         
         Log.d(TAG, "加载广告ID: " + adId);
         
-        if (!PangleAdManager.getInstance().isSdkReady()) {
-            Log.e(TAG, "GroMore融合SDK未就绪");
-            call.reject("GroMore融合SDK未就绪");
+        if (!TTAdSdk.isSdkReady()) {
+            Log.e(TAG, "穿山甲SDK未就绪");
+            call.reject("穿山甲SDK未就绪");
             return;
         }
         
@@ -71,17 +72,18 @@ public class CsjAdPlugin extends Plugin {
         
         activity.runOnUiThread(() -> {
             try {
-                mAdNative = PangleAdManager.getInstance().createAdNative(activity.getApplicationContext());
+                TTAdManager ttAdManager = TTAdSdk.getAdManager();
+                mTTAdNative = ttAdManager.createAdNative(activity.getApplicationContext());
                 
                 AdSlot adSlot = new AdSlot.Builder()
                         .setCodeId(adId)
-                        .setAdLoadType(PangleAdLoadType.LOAD)
+                        .setAdLoadType(TTAdLoadType.LOAD)
                         .setRewardAmount(1)
                         .setRewardName("金币")
-                        .setOrientation(PangleAdConstant.VERTICAL)
+                        .setOrientation(TTAdConstant.VERTICAL)
                         .build();
                 
-                mAdNative.loadRewardVideoAd(adSlot, new PangleAdNative.RewardVideoAdListener() {
+                mTTAdNative.loadRewardVideoAd(adSlot, new TTAdNative.RewardVideoAdListener() {
                     @Override
                     public void onError(int code, String message) {
                         Log.e(TAG, "广告加载失败: code=" + code + ", message=" + message);
@@ -92,7 +94,7 @@ public class CsjAdPlugin extends Plugin {
                     }
                     
                     @Override
-                    public void onRewardVideoAdLoad(PangleRewardVideoAd ad) {
+                    public void onRewardVideoAdLoad(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告加载成功");
                         mRewardVideoAd = ad;
                         setupAdListener(ad);
@@ -104,7 +106,7 @@ public class CsjAdPlugin extends Plugin {
                     }
                     
                     @Override
-                    public void onRewardVideoCached(PangleRewardVideoAd ad) {
+                    public void onRewardVideoCached(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告缓存成功");
                         mRewardVideoAd = ad;
                         setupAdListener(ad);
@@ -121,10 +123,10 @@ public class CsjAdPlugin extends Plugin {
         });
     }
     
-    private void setupAdListener(PangleRewardVideoAd ad) {
+    private void setupAdListener(TTRewardVideoAd ad) {
         if (ad == null) return;
         
-        ad.setRewardAdInteractionListener(new PangleRewardVideoAd.RewardAdInteractionListener() {
+        ad.setRewardAdInteractionListener(new TTRewardVideoAd.RewardAdInteractionListener() {
             @Override
             public void onAdShow() {
                 Log.d(TAG, "广告展示");
@@ -194,7 +196,7 @@ public class CsjAdPlugin extends Plugin {
             }
         });
         
-        ad.setDownloadListener(new PangleAppDownloadListener() {
+        ad.setDownloadListener(new TTAppDownloadListener() {
             @Override
             public void onIdle() {
             }
@@ -265,7 +267,7 @@ public class CsjAdPlugin extends Plugin {
     @PluginMethod
     public void isSdkReady(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("ready", PangleAdManager.getInstance().isSdkReady());
+        result.put("ready", TTAdSdk.isSdkReady());
         call.resolve(result);
     }
 }
