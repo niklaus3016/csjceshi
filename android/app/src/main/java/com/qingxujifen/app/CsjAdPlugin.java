@@ -18,8 +18,6 @@ import com.bytedance.sdk.openadsdk.TTAdNative;
 import com.bytedance.sdk.openadsdk.TTAdSdk;
 import com.bytedance.sdk.openadsdk.TTAppDownloadListener;
 import com.bytedance.sdk.openadsdk.TTRewardVideoAd;
-import com.bytedance.sdk.openadsdk.mediation.manager.MediationBaseManager;
-import com.bytedance.sdk.openadsdk.mediation.adapter.MediationAdEcpmInfo;
 
 import java.util.Map;
 
@@ -156,9 +154,13 @@ public class CsjAdPlugin extends Plugin {
                 
                 if (mRewardVideoAd != null) {
                     try {
-                        MediationBaseManager mediationManager = mRewardVideoAd.getMediationManager();
+                        Object mediationManager = mRewardVideoAd.getClass().getMethod("getMediationManager").invoke(mRewardVideoAd);
                         if (mediationManager != null) {
-                            mediationManager.destroy();
+                            try {
+                                mediationManager.getClass().getMethod("destroy").invoke(mediationManager);
+                            } catch (NoSuchMethodException e) {
+                                Log.d(TAG, "mediationManager无destroy方法");
+                            }
                         }
                     } catch (Exception e) {
                         Log.d(TAG, "销毁mediationManager失败: " + e.getMessage());
@@ -197,12 +199,20 @@ public class CsjAdPlugin extends Plugin {
                 double ecpm = 0;
                 if (mRewardVideoAd != null) {
                     try {
-                        MediationBaseManager mediationManager = mRewardVideoAd.getMediationManager();
+                        Object mediationManager = mRewardVideoAd.getClass().getMethod("getMediationManager").invoke(mRewardVideoAd);
                         if (mediationManager != null) {
-                            MediationAdEcpmInfo showEcpm = mediationManager.getShowEcpm();
-                            if (showEcpm != null) {
-                                ecpm = showEcpm.getEcpm();
-                                Log.d(TAG, "show后获取eCPM成功: " + ecpm);
+                            try {
+                                Object showEcpm = mediationManager.getClass().getMethod("getShowEcpm").invoke(mediationManager);
+                                if (showEcpm != null) {
+                                    try {
+                                        ecpm = (double) showEcpm.getClass().getMethod("getEcpm").invoke(showEcpm);
+                                        Log.d(TAG, "show后获取eCPM成功: " + ecpm);
+                                    } catch (NoSuchMethodException e) {
+                                        Log.d(TAG, "showEcpm无getEcpm方法");
+                                    }
+                                }
+                            } catch (NoSuchMethodException e) {
+                                Log.d(TAG, "mediationManager无getShowEcpm方法");
                             }
                         }
                     } catch (Exception e) {
