@@ -22,9 +22,10 @@ public class MainApplication extends Application {
         
         TTAdSdk.init(this, new TTAdConfig.Builder()
                 .appId(APP_ID)
+                .appName("荔枝记账")
                 .allowShowNotify(true)
                 .debug(false)
-                .supportMultiProcess(true)
+                .supportMultiProcess(false)
                 .build());
         
         TTAdSdk.start(new TTAdSdk.Callback() {
