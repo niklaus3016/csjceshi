@@ -5,12 +5,15 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(CsjAdPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+    
     public void performRiskCheckFromFrontend() {
         RiskDetector.RiskResult result = RiskDetector.checkAllRisks(this);
         if (result.hasRisk) {
-            // 暂时注释掉进程杀死逻辑，便于测试
-            // android.os.Process.killProcess(android.os.Process.myPid());
-            // System.exit(0);
         }
     }
 }
