@@ -28,6 +28,7 @@ public class CsjAdPlugin extends Plugin {
     private TTAdNative mTTAdNative;
     private TTRewardVideoAd mRewardVideoAd;
     private PluginCall pendingShowCall;
+    private double mLastAdRealEcpm = 0.0;
     
     private TTAdInteractionListener mInteractionListener = new TTAdInteractionListener() {
         @Override
@@ -97,6 +98,8 @@ public class CsjAdPlugin extends Plugin {
                     public void onRewardVideoAdLoad(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告加载成功");
                         mRewardVideoAd = ad;
+                        mLastAdRealEcpm = ad.getEcpm();
+                        Log.d(TAG, "加载成功缓存广告ECPM = " + mLastAdRealEcpm);
                         setupAdListener(ad);
                         notifyListeners("onAdLoaded", new JSObject());
                     }
@@ -109,6 +112,8 @@ public class CsjAdPlugin extends Plugin {
                     public void onRewardVideoCached(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告缓存成功");
                         mRewardVideoAd = ad;
+                        mLastAdRealEcpm = ad.getEcpm();
+                        Log.d(TAG, "缓存成功缓存广告ECPM = " + mLastAdRealEcpm);
                         setupAdListener(ad);
                         notifyListeners("onVideoDownloadSuccess", new JSObject());
                     }
@@ -152,21 +157,7 @@ public class CsjAdPlugin extends Plugin {
                     pendingShowCall = null;
                 }
                 
-                if (mRewardVideoAd != null) {
-                    try {
-                        Object mediationManager = mRewardVideoAd.getClass().getMethod("getMediationManager").invoke(mRewardVideoAd);
-                        if (mediationManager != null) {
-                            try {
-                                mediationManager.getClass().getMethod("destroy").invoke(mediationManager);
-                            } catch (NoSuchMethodException e) {
-                                Log.d(TAG, "mediationManager无destroy方法");
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.d(TAG, "销毁mediationManager失败: " + e.getMessage());
-                    }
-                    mRewardVideoAd = null;
-                }
+                mRewardVideoAd = null;
             }
             
             @Override
@@ -196,31 +187,8 @@ public class CsjAdPlugin extends Plugin {
                     result.put("rewardName", extraInfo.getString("reward_name", "金币"));
                 }
                 
-                double ecpm = 0;
-                if (mRewardVideoAd != null) {
-                    try {
-                        Object mediationManager = mRewardVideoAd.getClass().getMethod("getMediationManager").invoke(mRewardVideoAd);
-                        if (mediationManager != null) {
-                            try {
-                                Object showEcpm = mediationManager.getClass().getMethod("getShowEcpm").invoke(mediationManager);
-                                if (showEcpm != null) {
-                                    try {
-                                        ecpm = (double) showEcpm.getClass().getMethod("getEcpm").invoke(showEcpm);
-                                        Log.d(TAG, "show后获取eCPM成功: " + ecpm);
-                                    } catch (NoSuchMethodException e) {
-                                        Log.d(TAG, "showEcpm无getEcpm方法");
-                                    }
-                                }
-                            } catch (NoSuchMethodException e) {
-                                Log.d(TAG, "mediationManager无getShowEcpm方法");
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.d(TAG, "获取show后eCPM失败: " + e.getMessage());
-                    }
-                }
-                
-                result.put("ecpm", ecpm);
+                result.put("ecpm", mLastAdRealEcpm);
+                Log.d(TAG, "下发给JS的ECPM：" + mLastAdRealEcpm);
                 
                 notifyListeners("onRewardVerify", result);
                 
@@ -228,6 +196,8 @@ public class CsjAdPlugin extends Plugin {
                     pendingShowCall.resolve(result);
                     pendingShowCall = null;
                 }
+                
+                mLastAdRealEcpm = 0.0;
             }
             
             @Override
