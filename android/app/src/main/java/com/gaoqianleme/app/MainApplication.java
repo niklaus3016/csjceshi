@@ -1,14 +1,6 @@
 package com.gaoqianleme.app;
 
-import android.content.Context;
-import androidx.multidex.MultiDex;
-import androidx.multidex.MultiDexApplication;
+import android.app.Application;
 
-public class MainApplication extends MultiDexApplication {
-
-    @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
-        MultiDex.install(base);
-    }
+public class MainApplication extends Application {
 }
