@@ -6,8 +6,8 @@ import android.util.Log;
 
 import androidx.multidex.MultiDex;
 
-import com.bytedance.sdk.openadsdk.TTAdConfig;
-import com.bytedance.sdk.openadsdk.TTAdSdk;
+import com.pangle.cn.pangleadsdk.PangleAdManager;
+import com.pangle.cn.pangleadsdk.PangleConfig;
 
 public class MainApplication extends Application {
 
@@ -23,29 +23,26 @@ public class MainApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        initTTAdSdk();
+        initPangleSdk();
     }
 
-    private void initTTAdSdk() {
-        Log.d(TAG, "初始化穿山甲SDK: appId=" + APP_ID);
+    private void initPangleSdk() {
+        Log.d(TAG, "初始化GroMore融合SDK: appId=" + APP_ID);
         
-        TTAdSdk.init(this, new TTAdConfig.Builder()
+        PangleAdManager.getInstance().init(this, new PangleConfig.Builder()
                 .appId(APP_ID)
-                .appName("轻序计分")
-                .allowShowNotify(true)
-                .debug(false)
-                .supportMultiProcess(false)
+                .useMediation(true)
                 .build());
         
-        TTAdSdk.start(new TTAdSdk.Callback() {
+        PangleAdManager.getInstance().start(new PangleAdManager.Callback() {
             @Override
             public void success() {
-                Log.d(TAG, "穿山甲SDK初始化成功");
+                Log.d(TAG, "GroMore融合SDK初始化成功");
             }
             
             @Override
             public void fail(int code, String msg) {
-                Log.e(TAG, "穿山甲SDK初始化失败: code=" + code + ", msg=" + msg);
+                Log.e(TAG, "GroMore融合SDK初始化失败: code=" + code + ", msg=" + msg);
             }
         });
     }
