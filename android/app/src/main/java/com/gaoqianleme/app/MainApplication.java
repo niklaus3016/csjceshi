@@ -22,12 +22,10 @@ public class MainApplication extends Application {
         
         TTAdSdk.init(this, new TTAdConfig.Builder()
                 .appId(APP_ID)
-                .useTextureView(true)
                 .allowShowNotify(true)
                 .allowShowPageWhenScreenLock(false)
                 .debug(false)
                 .supportMultiProcess(true)
-                .titleBarTheme(TTAdConfig.TITLE_BAR_THEME_DARK)
                 .build());
         
         TTAdSdk.start(new TTAdSdk.Callback() {
