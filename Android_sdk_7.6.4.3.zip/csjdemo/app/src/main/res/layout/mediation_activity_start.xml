@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:ignore="HardcodedText">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_gravity="center_vertical"
+        android:background="@color/title"
+        android:gravity="center"
+        android:text="Bytedance ad Demo"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="15sp" />
+
+    <Switch
+        android:id="@+id/s_mediation_open"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:gravity="end|center_vertical"
+        android:switchTextAppearance="?android:attr/textAppearanceSmall"
+        android:text="聚合能力"/>
+
+    <Button
+        android:id="@+id/bt_csj_ad_show"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:gravity="center"
+        android:text="穿山甲广告展示"
+        android:textColor="#3399cc"
+        android:textSize="14sp"
+        android:theme="@style/PrimaryButton" />
+
+</LinearLayout>
