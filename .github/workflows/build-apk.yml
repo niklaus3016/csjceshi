@@ -209,9 +209,10 @@ jobs:
       env:
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
         cd android
-        ./gradlew assembleRelease -PKEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" -PKEY_ALIAS="$KEY_ALIAS"
+        ./gradlew assembleRelease
         
     - name: Calculate Release APK SHA1
       if: github.event_name != 'pull_request'
