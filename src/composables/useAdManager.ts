@@ -48,17 +48,13 @@ export function useAdManager(config: AdConfig) {
   let isPreloading = false; // 是否正在预加载
   let preloadingPromise: Promise<void> | null = null; // 预加载Promise，用于等待预加载完成
   
-  // 广告位分组配置（穿山甲）- 5个保价广告位
+  // 广告位分组配置（穿山甲）- 测试：仅保留104282400
   const AD_GROUPS = {
-    A: ['104282400'],   // 保价1500
-    B: ['104284867'],   // 保价1000
-    C: ['104285137'],   // 保价500
-    D: ['104284866'],   // 保价150
-    E: ['104284953']    // 保价40
+    A: ['104282400']    // 保价1500
   };
 
   // 分组顺序（用于遍历）
-  const GROUP_ORDER = ['A', 'B', 'C', 'D', 'E'];
+  const GROUP_ORDER = ['A'];
   
   // 本地存储键名
   const SCHEDULER_STATE_KEY = 'ad_scheduler_state';
@@ -67,10 +63,10 @@ export function useAdManager(config: AdConfig) {
   const MAX_EXPOSES_WITHOUT_FLOAT = 30; // 累计30次曝光未达成连续2次命中上浮
   const EXPIRY_HOURS = 24; // 设备距离上次曝光超过24小时
   
-  // 单个广告位超时时间（毫秒）
-  const PARALLEL_TIMEOUT = 2000;
-  // 预加载总超时时间（毫秒）
-  const PRELOAD_TOTAL_TIMEOUT = 30000;
+  // 单个广告位超时时间（毫秒）- 测试：60秒
+  const PARALLEL_TIMEOUT = 60000;
+  // 预加载总超时时间（毫秒）- 测试：120秒（保证单广告位60秒超时能生效）
+  const PRELOAD_TOTAL_TIMEOUT = 120000;
   // 组间延迟时间（毫秒）
   const GROUP_DELAY = 500;
   // 广告位间隔时间（毫秒）
