@@ -6,8 +6,8 @@ import android.util.Log;
 
 import androidx.multidex.MultiDex;
 
-import com.pangle.cn.pangleadsdk.PangleAdManager;
-import com.pangle.cn.pangleadsdk.PangleConfig;
+import com.bytedance.sdk.openadsdk.TTAdConfig;
+import com.bytedance.sdk.openadsdk.TTAdSdk;
 
 public class MainApplication extends Application {
 
@@ -23,19 +23,30 @@ public class MainApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        initPangleSdk();
+        initTTAdSdk();
     }
 
-    private void initPangleSdk() {
-        Log.d(TAG, "初始化GroMore融合SDK(纯穿山甲模式): appId=" + APP_ID);
+    private void initTTAdSdk() {
+        Log.d(TAG, "初始化穿山甲SDK: appId=" + APP_ID);
         
-        PangleAdManager.getInstance().init(this, new PangleConfig.Builder()
+        TTAdSdk.init(this, new TTAdConfig.Builder()
                 .appId(APP_ID)
                 .appName("荔枝记账")
-                .useMediation(false)
+                .allowShowNotify(true)
                 .debug(false)
+                .supportMultiProcess(false)
                 .build());
         
-        Log.d(TAG, "GroMore融合SDK初始化完成");
+        TTAdSdk.start(new TTAdSdk.Callback() {
+            @Override
+            public void success() {
+                Log.d(TAG, "穿山甲SDK初始化成功");
+            }
+            
+            @Override
+            public void fail(int code, String msg) {
+                Log.e(TAG, "穿山甲SDK初始化失败: code=" + code + ", msg=" + msg);
+            }
+        });
     }
 }
