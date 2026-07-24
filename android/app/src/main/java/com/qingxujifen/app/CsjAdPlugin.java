@@ -175,12 +175,15 @@ public class CsjAdPlugin extends Plugin {
                 JSObject result = new JSObject();
                 result.put("rewardVerify", isRewardValid);
                 
+                int ecpm = 0;
                 if (extraInfo != null) {
                     result.put("rewardAmount", extraInfo.getInt("reward_amount", 1));
                     result.put("rewardName", extraInfo.getString("reward_name", "金币"));
+                    ecpm = extraInfo.getInt("ecpm", 0);
+                    Log.d(TAG, "穿山甲返回ECPM: " + ecpm);
                 }
                 
-                result.put("ecpm", 0);
+                result.put("ecpm", ecpm);
                 
                 notifyListeners("onRewardVerify", result);
                 
