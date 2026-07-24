@@ -66,7 +66,7 @@
         </provider>
 
         <provider
-            android:name="com.bytedance.sdk.openadsdk.TTFileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.TTFileProvider"
             android:exported="false"
             android:grantUriPermissions="true">
