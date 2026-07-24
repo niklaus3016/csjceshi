@@ -48,13 +48,16 @@ export function useAdManager(config: AdConfig) {
   let isPreloading = false; // 是否正在预加载
   let preloadingPromise: Promise<void> | null = null; // 预加载Promise，用于等待预加载完成
   
-  // 广告位分组配置（穿山甲）- 瀑布流聚合广告位
+  // 广告位分组配置（穿山甲）- 4个保价广告位
   const AD_GROUPS = {
-    A: ['104282400']      // 瀑布流总ID
+    A: ['104284867'],   // 保价1000
+    B: ['104285137'],   // 保价500
+    C: ['104284866'],   // 保价150
+    D: ['104284953']    // 保价40
   };
-  
+
   // 分组顺序（用于遍历）
-  const GROUP_ORDER = ['A'];
+  const GROUP_ORDER = ['A', 'B', 'C', 'D'];
   
   // 本地存储键名
   const SCHEDULER_STATE_KEY = 'ad_scheduler_state';
@@ -121,16 +124,17 @@ export function useAdManager(config: AdConfig) {
   // 更新调度器状态（公共函数）
   const updateSchedulerStateOnHit = (state: SchedulerState, hitGroup: string | null): void => {
     const startIndex = GROUP_ORDER.indexOf(state.start_group);
-    
+    const lastIndex = GROUP_ORDER.length - 1;
+
     if (hitGroup) {
       const hitIndex = GROUP_ORDER.indexOf(hitGroup);
-      
+
       if (hitGroup === state.start_group) {
         // 命中起始分组：连续命中计数+1，累计2次且非A组则上浮
         state.hit_streak += 1;
         console.log(`📈 连续命中起始分组计数: ${state.hit_streak}`);
-        
-        if (state.hit_streak >= 2 && state.start_group !== 'A') {
+
+        if (state.hit_streak >= 2 && startIndex > 0) {
           state.start_group = GROUP_ORDER[startIndex - 1];
           state.hit_streak = 0;
           console.log(`⬆️ 连续命中2次，上浮到分组 ${state.start_group}`);
@@ -144,20 +148,24 @@ export function useAdManager(config: AdConfig) {
         // 命中更低价值分组（索引更大）：下沉一组
         state.hit_streak = 0;
         console.log(`📉 命中更低价值分组 ${hitGroup}，重置连续命中计数`);
-        
-        if (state.start_group !== 'F') {
+
+        if (startIndex < lastIndex) {
           state.start_group = GROUP_ORDER[startIndex + 1];
           console.log(`⬇️ 下沉到分组 ${state.start_group}`);
+        } else {
+          console.log(`⏸️ 已在最低分组 ${state.start_group}，不再下沉`);
         }
       }
     } else {
       // 全空：下沉一组
       state.hit_streak = 0;
       console.log(`📉 全空，重置连续命中计数`);
-      
-      if (state.start_group !== 'F') {
+
+      if (startIndex < lastIndex) {
         state.start_group = GROUP_ORDER[startIndex + 1];
         console.log(`⬇️ 下沉到分组 ${state.start_group}`);
+      } else {
+        console.log(`⏸️ 已在最低分组 ${state.start_group}，不再下沉`);
       }
     }
   };
@@ -277,7 +285,10 @@ export function useAdManager(config: AdConfig) {
 
   const generateSimulatedEcpm = (slotId: string): number => {
     const ecpmRanges: { [key: string]: [number, number] } = {
-      '104282400': [1350, 1500]      // 瀑布流总ID
+      '104284867': [900, 1000],     // 保价1000
+      '104285137': [400, 500],      // 保价500
+      '104284866': [100, 150],      // 保价150
+      '104284953': [20, 40]         // 保价40
     };
 
     const range = ecpmRanges[slotId];
