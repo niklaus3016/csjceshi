@@ -52,7 +52,6 @@ public class MainApplication extends MultiDexApplication {
                     .appId(APP_ID)
                     .appName("荔枝记账")
                     .debug(true)
-                    .useMediation(true)
                     .build();
             
             TTAdSdk.init(this, ttAdConfig);

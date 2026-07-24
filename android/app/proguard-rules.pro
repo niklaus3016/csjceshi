@@ -19,3 +19,33 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# 穿山甲广告 SDK 混淆规则
+-keep class com.bytedance.sdk.openadsdk.** { *; }
+-keep class com.bytedance.sdk.** { *; }
+-keep class com.tt.** { *; }
+-keep class com.qq.e.** { *; }
+-keep class com.umeng.** { *; }
+-keep class com.alibaba.sdk.android.oss.** { *; }
+-keep class com.android.internal.os.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keep class com.google.android.exoplayer2.** { *; }
+-keep class com.google.android.exoplayer.** { *; }
+-keep class com.google.android.gsf.** { *; }
+
+# 穿山甲SDK需要反射调用的类
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Application
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+-keep public class * extends android.app.Service
+
+# 保持JS接口不被混淆
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# 保持native方法不被混淆
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
