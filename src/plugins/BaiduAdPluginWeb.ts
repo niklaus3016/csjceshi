@@ -1,14 +1,14 @@
 import { WebPlugin } from '@capacitor/core';
-import type { CsjAdPlugin } from './BaiduAdPlugin';
+import type { BaiduAdPlugin } from './BaiduAdPlugin';
 
-export class BaiduAdPluginWeb extends WebPlugin implements CsjAdPlugin {
+export class BaiduAdPluginWeb extends WebPlugin {
   async loadRewardVideoAd(options: { adId: string }): Promise<void> {
-    console.log('Web 环境，使用模拟广告，广告位ID:', options.adId);
+    console.log('Web 环境不支持穿山甲原生广告，请使用 H5 SDK');
     return Promise.resolve();
   }
 
   async showRewardVideoAd(): Promise<void> {
-    console.log('Web 环境，模拟广告展示');
+    console.log('Web 环境不支持穿山甲原生广告，请使用 H5 SDK');
     return Promise.resolve();
   }
 
@@ -16,13 +16,16 @@ export class BaiduAdPluginWeb extends WebPlugin implements CsjAdPlugin {
     return { ready: false };
   }
 
+  async isSdkReady(): Promise<{ ready: boolean }> {
+    return { ready: true };
+  }
+
   async addListener(eventName: string, listenerFunc: (data: any) => void): Promise<any> {
-    console.log('Web 环境，注册监听器:', eventName);
+    console.log('Web 环境不支持穿山甲原生广告，请使用 H5 SDK');
     return Promise.resolve();
   }
 
   async removeListener(eventName: string, listenerFunc: (data: any) => void): Promise<void> {
-    console.log('Web 环境，移除监听器:', eventName);
     return Promise.resolve();
   }
 }

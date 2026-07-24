@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">广告变现系统</string>
-    <string name="title_activity_main">广告变现系统</string>
+    <string name="app_name">荔枝记账</string>
+    <string name="title_activity_main">荔枝记账</string>
     <string name="package_name">com.gaoqianleme.app</string>
     <string name="custom_url_scheme">com.gaoqianleme.app</string>
 </resources>

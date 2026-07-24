@@ -10,10 +10,13 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.bytedance.sdk.openadsdk.AdSlot;
+import com.bytedance.sdk.openadsdk.TTAdConstant;
+import com.bytedance.sdk.openadsdk.TTAdInteractionListener;
 import com.bytedance.sdk.openadsdk.TTAdLoadType;
 import com.bytedance.sdk.openadsdk.TTAdManager;
 import com.bytedance.sdk.openadsdk.TTAdNative;
 import com.bytedance.sdk.openadsdk.TTAdSdk;
+import com.bytedance.sdk.openadsdk.TTAppDownloadListener;
 import com.bytedance.sdk.openadsdk.TTRewardVideoAd;
 
 import java.util.Map;
@@ -23,9 +26,27 @@ public class CsjAdPlugin extends Plugin {
     
     private static final String TAG = "CsjAdPlugin";
     private TTAdNative mTTAdNative;
-    private TTRewardVideoAd mTTRewardVideoAd;
+    private TTRewardVideoAd mRewardVideoAd;
     private PluginCall pendingShowCall;
-    private boolean isAdCached = false;
+    
+    private TTAdInteractionListener mInteractionListener = new TTAdInteractionListener() {
+        @Override
+        public void onAdEvent(int code, Map map) {
+            if (map == null) {
+                return;
+            }
+            switch (code) {
+                case TTAdConstant.AD_EVENT_AUTH_DOUYIN:
+                    String uid = (String) map.get("open_uid");
+                    Log.d(TAG, "授权成功 --> uid：" + uid);
+                    break;
+                case TTAdConstant.AD_EVENT_EXCHANGE_COUPON_FINISH:
+                    String isSuccess = String.valueOf(map.get("isSuccess"));
+                    Log.d(TAG, "兑换结果：" + isSuccess);
+                    break;
+            }
+        }
+    };
     
     @PluginMethod
     public void loadRewardVideoAd(PluginCall call) {
@@ -37,50 +58,46 @@ public class CsjAdPlugin extends Plugin {
         
         Log.d(TAG, "加载广告ID: " + adId);
         
+        if (!TTAdSdk.isSdkReady()) {
+            Log.e(TAG, "穿山甲SDK未就绪");
+            call.reject("穿山甲SDK未就绪");
+            return;
+        }
+        
         Activity activity = getActivity();
         if (activity == null) {
             call.reject("Activity 为空");
             return;
         }
         
-        if (!TTAdSdk.isSdkReady()) {
-            Log.e(TAG, "SDK未就绪，请等待初始化完成");
-            call.reject("SDK未就绪");
-            return;
-        }
-        
-        if (mTTAdNative == null) {
-            TTAdManager ttAdManager = TTAdSdk.getAdManager();
-            if (ttAdManager == null) {
-                call.reject("SDK未初始化");
-                return;
-            }
-            mTTAdNative = ttAdManager.createAdNative(activity.getApplicationContext());
-        }
-        
-        isAdCached = false;
-        mTTRewardVideoAd = null;
-        
         activity.runOnUiThread(() -> {
             try {
+                TTAdManager ttAdManager = TTAdSdk.getAdManager();
+                mTTAdNative = ttAdManager.createAdNative(activity.getApplicationContext());
+                
                 AdSlot adSlot = new AdSlot.Builder()
                         .setCodeId(adId)
                         .setAdLoadType(TTAdLoadType.LOAD)
                         .setRewardAmount(1)
                         .setRewardName("金币")
+                        .setOrientation(TTAdConstant.VERTICAL)
                         .build();
                 
                 mTTAdNative.loadRewardVideoAd(adSlot, new TTAdNative.RewardVideoAdListener() {
                     @Override
                     public void onError(int code, String message) {
                         Log.e(TAG, "广告加载失败: code=" + code + ", message=" + message);
-                        notifyListeners("onAdFailed", new JSObject().put("error", message));
+                        JSObject errorResult = new JSObject();
+                        errorResult.put("error", message);
+                        errorResult.put("code", code);
+                        notifyListeners("onAdFailed", errorResult);
                     }
                     
                     @Override
                     public void onRewardVideoAdLoad(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告加载成功");
-                        handleAd(ad);
+                        mRewardVideoAd = ad;
+                        setupAdListener(ad);
                         notifyListeners("onAdLoaded", new JSObject());
                     }
                     
@@ -91,8 +108,8 @@ public class CsjAdPlugin extends Plugin {
                     @Override
                     public void onRewardVideoCached(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告缓存成功");
-                        isAdCached = true;
-                        handleAd(ad);
+                        mRewardVideoAd = ad;
+                        setupAdListener(ad);
                         notifyListeners("onVideoDownloadSuccess", new JSObject());
                     }
                 });
@@ -106,12 +123,10 @@ public class CsjAdPlugin extends Plugin {
         });
     }
     
-    private void handleAd(TTRewardVideoAd ad) {
-        if (mTTRewardVideoAd != null) {
-            return;
-        }
-        mTTRewardVideoAd = ad;
-        mTTRewardVideoAd.setRewardAdInteractionListener(new TTRewardVideoAd.RewardAdInteractionListener() {
+    private void setupAdListener(TTRewardVideoAd ad) {
+        if (ad == null) return;
+        
+        ad.setRewardAdInteractionListener(new TTRewardVideoAd.RewardAdInteractionListener() {
             @Override
             public void onAdShow() {
                 Log.d(TAG, "广告展示");
@@ -136,9 +151,6 @@ public class CsjAdPlugin extends Plugin {
                     pendingShowCall.resolve(result);
                     pendingShowCall = null;
                 }
-                
-                mTTRewardVideoAd = null;
-                isAdCached = false;
             }
             
             @Override
@@ -158,17 +170,14 @@ public class CsjAdPlugin extends Plugin {
             
             @Override
             public void onRewardArrived(boolean isRewardValid, int rewardType, Bundle extraInfo) {
-                Log.d(TAG, "获得奖励: " + isRewardValid);
+                Log.d(TAG, "获得奖励: isRewardValid=" + isRewardValid + ", rewardType=" + rewardType);
                 
                 JSObject result = new JSObject();
                 result.put("rewardVerify", isRewardValid);
                 
                 if (extraInfo != null) {
-                    result.put("rewardName", extraInfo.getString(TTRewardVideoAd.REWARD_EXTRA_KEY_REWARD_NAME));
-                    result.put("rewardAmount", extraInfo.getInt(TTRewardVideoAd.REWARD_EXTRA_KEY_REWARD_AMOUNT));
-                    result.put("rewardPropose", extraInfo.getFloat(TTRewardVideoAd.REWARD_EXTRA_KEY_REWARD_PROPOSE));
-                    result.put("errorCode", extraInfo.getInt(TTRewardVideoAd.REWARD_EXTRA_KEY_ERROR_CODE));
-                    result.put("errorMsg", extraInfo.getString(TTRewardVideoAd.REWARD_EXTRA_KEY_ERROR_MSG));
+                    result.put("rewardAmount", extraInfo.getInt("reward_amount", 1));
+                    result.put("rewardName", extraInfo.getString("reward_name", "金币"));
                 }
                 
                 result.put("ecpm", 0);
@@ -186,6 +195,37 @@ public class CsjAdPlugin extends Plugin {
                 Log.d(TAG, "广告跳过");
             }
         });
+        
+        ad.setDownloadListener(new TTAppDownloadListener() {
+            @Override
+            public void onIdle() {
+            }
+            
+            @Override
+            public void onDownloadActive(long totalBytes, long currBytes, String fileName, String appName) {
+                Log.d(TAG, "onDownloadActive: totalBytes=" + totalBytes + ", currBytes=" + currBytes);
+            }
+            
+            @Override
+            public void onDownloadPaused(long totalBytes, long currBytes, String fileName, String appName) {
+                Log.d(TAG, "onDownloadPaused: totalBytes=" + totalBytes + ", currBytes=" + currBytes);
+            }
+            
+            @Override
+            public void onDownloadFailed(long totalBytes, long currBytes, String fileName, String appName) {
+                Log.d(TAG, "onDownloadFailed: totalBytes=" + totalBytes + ", currBytes=" + currBytes);
+            }
+            
+            @Override
+            public void onDownloadFinished(long totalBytes, String fileName, String appName) {
+                Log.d(TAG, "onDownloadFinished: totalBytes=" + totalBytes);
+            }
+            
+            @Override
+            public void onInstalled(String fileName, String appName) {
+                Log.d(TAG, "onInstalled: fileName=" + fileName + ", appName=" + appName);
+            }
+        });
     }
     
     @PluginMethod
@@ -198,7 +238,7 @@ public class CsjAdPlugin extends Plugin {
             return;
         }
         
-        if (mTTRewardVideoAd == null) {
+        if (mRewardVideoAd == null) {
             call.reject("广告未加载");
             return;
         }
@@ -206,7 +246,9 @@ public class CsjAdPlugin extends Plugin {
         activity.runOnUiThread(() -> {
             try {
                 pendingShowCall = call;
-                mTTRewardVideoAd.showRewardVideoAd(activity);
+                mRewardVideoAd.showRewardVideoAd(activity);
+                mRewardVideoAd.setAdInteractionListener(mInteractionListener);
+                mRewardVideoAd = null;
             } catch (Exception e) {
                 Log.e(TAG, "展示广告异常: " + e.getMessage(), e);
                 call.reject("展示广告异常: " + e.getMessage());
@@ -218,7 +260,14 @@ public class CsjAdPlugin extends Plugin {
     @PluginMethod
     public void isReady(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("ready", mTTRewardVideoAd != null);
+        result.put("ready", mRewardVideoAd != null);
+        call.resolve(result);
+    }
+    
+    @PluginMethod
+    public void isSdkReady(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("ready", TTAdSdk.isSdkReady());
         call.resolve(result);
     }
 }

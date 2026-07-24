@@ -30,9 +30,17 @@ const handleLogin = async (e: Event) => {
       // 登录成功，存储员工信息
       localStorage.setItem('empId', empId.value);
       localStorage.setItem('employeeInfo', JSON.stringify(response.data));
-      // 使用后端返回的userId，如果没有则使用员工号生成
-      const userId = response.data.userId || `user_${empId.value}`;
+      // 使用后端返回的userId，如果没有则直接使用员工号
+      const userId = response.data.userId || empId.value;
       localStorage.setItem('userId', userId);
+      // 存储token（如果后端返回了token）
+      if (response.token) {
+        const token = response.token;
+        localStorage.setItem('token', token);
+      } else {
+        // 如果后端没有返回token，使用默认的测试token
+        localStorage.setItem('token', 'test-token-1111');
+      }
       // 跳转到首页
       router.push('/');
     } else {
@@ -113,12 +121,7 @@ const onInput = (e: Event) => {
         </form>
       </div>
 
-      <!-- 底部备案信息 -->
-      <div class="mt-4 text-center">
-        <p class="text-[10px] text-zinc-600 uppercase tracking-[0.2em]">
-          浙ICP备2026009642号-1
-        </p>
-      </div>
+
     </div>
   </div>
 </template>

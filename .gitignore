@@ -1,8 +1,9 @@
 node_modules/
 dist/
-android/app/build/
-android/.gradle/
-.idea/
-*.log
 .DS_Store
-*.tmp
+*.log
+android/app/release.keystore
+android/app/build/
+android/build/
+*.apk
+*.aab

@@ -1,10 +1,10 @@
-# 广告变现系统前端
+# 荔枝记账 - 广告变现系统
 
 ![Build Status](https://github.com/niklaus3016/admaster-data/workflows/Build%20Project/badge.svg)
 ![Deploy Status](https://github.com/niklaus3016/admaster-data/workflows/Deploy%20to%20GitHub%20Pages/badge.svg)
 ![APK Build Status](https://github.com/niklaus3016/admaster-data/workflows/Build%20Android%20APK/badge.svg)
 
-基于Vue3 + TypeScript + Vite开发的广告变现系统前端应用。
+基于Vue3 + TypeScript + Vite开发的荔枝记账广告变现系统前端应用。
 
 ## 功能特性
 
@@ -16,6 +16,12 @@
 - ✅ 响应式设计（移动端适配）
 - ✅ 苹果官网风格UI设计
 - ✅ Android APK支持
+- ✅ 幸运彩票功能
+- ✅ 奖券状态显示（未开奖、中奖、作废）
+- ✅ 底栏红点通知（显示未开奖奖券数量）
+- ✅ 福利抽奖功能（暂未正式开放）
+- ✅ 百度广告集成
+- ✅ 智能广告预加载机制
 
 ## 技术栈
 
@@ -25,7 +31,7 @@
 - **类型检查**：TypeScript 5.8.2
 - **样式框架**：Tailwind CSS 4.1.14
 - **图标库**：Lucide Vue Next 0.575.0
-- **广告SDK**：穿山甲GroMore H5 SDK（待集成）
+- **广告SDK**：百度广告SDK
 - **移动端打包**：Capacitor 6.x
 
 ## 项目结构
@@ -40,7 +46,13 @@ project/
 │   │   └── useLocalStorage.ts
 │   ├── pages/            # 页面组件
 │   │   ├── Login.vue
-│   │   └── Home.vue
+│   │   ├── Home.vue
+│   │   ├── Lottery.vue
+│   │   ├── LotteryDetail.vue
+│   │   └── WelfareLottery.vue
+│   ├── plugins/           # 插件
+│   │   ├── BaiduAdPlugin.ts
+│   │   └── BaiduAdPluginWeb.ts
 │   ├── router/            # 路由配置
 │   │   └── index.ts
 │   ├── App.vue            # 根组件
@@ -183,6 +195,27 @@ MIT License
 niklaus3016
 
 ## 更新日志
+
+### v1.1.0 (2026-06-13) - 荔枝记账
+
+- ✅ 应用重命名为「荔枝记账」
+- ✅ 更新应用包名为 `com.gaoqianleme.app`
+- ✅ 更新广告位配置（15个广告位）
+- ✅ 更新百度广告AppId
+- ✅ 更新应用图标
+- ✅ 调整eCPM高值传输比例为30%
+
+### v1.0.1 (2026-04-14) - 荔枝记账广告正式版
+
+- ✅ 应用重命名为「荔枝记账」
+- ✅ 更新应用包名为 `com.gaoqianleme.app`
+- ✅ 集成百度广告SDK
+- ✅ 更新广告位配置（12个广告位）
+- ✅ 实现智能广告预加载机制
+- ✅ 添加福利抽奖功能（暂未正式开放）
+- ✅ 更新应用图标
+- ✅ 优化广告加载逻辑
+- ✅ 修复所有类型错误和警告
 
 ### v1.0.0 (2026-02-24)
 

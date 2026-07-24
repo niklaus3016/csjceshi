@@ -19,7 +19,7 @@ icon_sizes = {
 }
 
 # 源图片路径
-source_image = 'android/app/src/main/res/v3.8.png'
+source_image = 'yxxzicon512.png'
 res_dir = 'android/app/src/main/res'
 
 if not os.path.exists(source_image):

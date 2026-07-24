@@ -46,7 +46,7 @@
         <activity
             android:name="com.bytedance.sdk.openadsdk.activity.TTInteractionActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <activity
             android:name="com.bytedance.sdk.openadsdk.activity.TTNativeExpressActivity"
@@ -55,8 +55,7 @@
 
         <activity
             android:name="com.bytedance.sdk.openadsdk.activity.TTDelegateActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            android:theme="@android:style/Theme.NoTitleBar" />
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

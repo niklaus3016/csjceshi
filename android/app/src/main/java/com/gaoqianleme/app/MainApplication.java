@@ -1,17 +1,24 @@
 package com.gaoqianleme.app;
 
-import android.app.Application;
 import android.content.Context;
 import android.provider.Settings;
+import android.support.multidex.MultiDex;
+import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
 import com.bytedance.sdk.openadsdk.TTAdConfig;
 import com.bytedance.sdk.openadsdk.TTAdSdk;
 
-public class MainApplication extends Application {
+public class MainApplication extends MultiDexApplication {
 
     private static final String TAG = "MainApplication";
     private static final String APP_ID = "5793939";
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(base);
+    }
 
     @Override
     public void onCreate() {
@@ -22,7 +29,7 @@ public class MainApplication extends Application {
         String deviceId = getMyDeviceId();
         Log.d(TAG, "========================================");
         Log.d(TAG, "设备 ID: " + deviceId);
-        Log.d(TAG, "请将此设备 ID 添加到穿山甲联盟后台的测试设备列表中");
+        Log.d(TAG, "请将此设备 ID 添加到穿山甲后台的测试设备列表中");
         Log.d(TAG, "========================================");
         
         initCsjAdSDK();
@@ -43,9 +50,9 @@ public class MainApplication extends Application {
             
             TTAdConfig ttAdConfig = new TTAdConfig.Builder()
                     .appId(APP_ID)
-                    .appName("搞钱乐么")
+                    .appName("荔枝记账")
                     .debug(true)
-                    .useMediation(false)
+                    .useMediation(true)
                     .build();
             
             TTAdSdk.init(this, ttAdConfig);
@@ -58,7 +65,7 @@ public class MainApplication extends Application {
 
                 @Override
                 public void fail(int code, String msg) {
-                    Log.e(TAG, "❌ 穿山甲广告SDK启动失败: code=" + code + ", msg=" + msg);
+                    Log.e(TAG, "❌ 穿山甲广告SDK启动失败, code: " + code + ", msg: " + msg);
                 }
             });
             
