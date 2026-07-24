@@ -18,11 +18,9 @@ import com.bytedance.sdk.openadsdk.TTAdNative;
 import com.bytedance.sdk.openadsdk.TTAdSdk;
 import com.bytedance.sdk.openadsdk.TTAppDownloadListener;
 import com.bytedance.sdk.openadsdk.TTRewardVideoAd;
-import com.bytedance.sdk.openadsdk.mediation.manager.MediationRewardManager;
-import com.bytedance.sdk.openadsdk.mediation.manager.MediationAdLoadInfo;
+import com.bytedance.sdk.openadsdk.mediation.manager.MediationBaseManager;
 import com.bytedance.sdk.openadsdk.mediation.adapter.MediationAdEcpmInfo;
 
-import java.util.List;
 import java.util.Map;
 
 @CapacitorPlugin(name = "CsjAd")
@@ -32,7 +30,6 @@ public class CsjAdPlugin extends Plugin {
     private TTAdNative mTTAdNative;
     private TTRewardVideoAd mRewardVideoAd;
     private PluginCall pendingShowCall;
-    private double mRealEcpm = 0;
     
     private TTAdInteractionListener mInteractionListener = new TTAdInteractionListener() {
         @Override
@@ -100,61 +97,10 @@ public class CsjAdPlugin extends Plugin {
                     
                     @Override
                     public void onRewardVideoAdLoad(TTRewardVideoAd ad) {
+                        Log.d(TAG, "广告加载成功");
                         mRewardVideoAd = ad;
                         setupAdListener(ad);
-                        
-                        double realEcpm = 0;
-                        try {
-                            MediationRewardManager mediationManager = ad.getMediationManager();
-                            Log.d(TAG, "mediationManager: " + (mediationManager != null));
-                            if (mediationManager != null) {
-                                Log.d(TAG, "mediationManager class: " + mediationManager.getClass().getName());
-                                try {
-                                    Object adLoadInfo = mediationManager.getClass().getMethod("getAdLoadInfo").invoke(mediationManager);
-                                    Log.d(TAG, "adLoadInfo: " + (adLoadInfo != null));
-                                    if (adLoadInfo != null) {
-                                        Log.d(TAG, "adLoadInfo class: " + adLoadInfo.getClass().getName());
-                                        if (adLoadInfo instanceof java.util.List) {
-                                            java.util.List<?> infoList = (java.util.List<?>) adLoadInfo;
-                                            Log.d(TAG, "adLoadInfo size: " + infoList.size());
-                                            if (!infoList.isEmpty()) {
-                                                Object firstInfo = infoList.get(0);
-                                                Log.d(TAG, "firstInfo class: " + firstInfo.getClass().getName());
-                                                try {
-                                                    Object ecpmInfo = firstInfo.getClass().getMethod("getMediationAdEcpmInfo").invoke(firstInfo);
-                                                    Log.d(TAG, "ecpmInfo: " + (ecpmInfo != null));
-                                                    if (ecpmInfo != null) {
-                                                        try {
-                                                            realEcpm = (double) ecpmInfo.getClass().getMethod("getEcpm").invoke(ecpmInfo);
-                                                            Log.d(TAG, "聚合模式获取eCPM成功: " + realEcpm);
-                                                        } catch (NoSuchMethodException e) {
-                                                            try {
-                                                                realEcpm = (double) ecpmInfo.getClass().getMethod("getEcpmValue").invoke(ecpmInfo);
-                                                                Log.d(TAG, "使用getEcpmValue获取eCPM: " + realEcpm);
-                                                            } catch (NoSuchMethodException e2) {
-                                                                Log.d(TAG, "ecpmInfo无getEcpm方法");
-                                                            }
-                                                        }
-                                                    }
-                                                } catch (NoSuchMethodException e) {
-                                                    Log.d(TAG, "无getMediationAdEcpmInfo方法");
-                                                }
-                                            }
-                                        }
-                                    }
-                                } catch (NoSuchMethodException e) {
-                                    Log.d(TAG, "mediationManager无getAdLoadInfo方法");
-                                }
-                            }
-                        } catch (Exception e) {
-                            Log.d(TAG, "获取eCPM失败: " + e.getMessage());
-                        }
-                        mRealEcpm = realEcpm;
-                        Log.d(TAG, "广告加载成功, eCPM=" + realEcpm);
-                        
-                        JSObject loadedResult = new JSObject();
-                        loadedResult.put("ecpm", realEcpm);
-                        notifyListeners("onAdLoaded", loadedResult);
+                        notifyListeners("onAdLoaded", new JSObject());
                     }
                     
                     @Override
@@ -207,6 +153,18 @@ public class CsjAdPlugin extends Plugin {
                     pendingShowCall.resolve(result);
                     pendingShowCall = null;
                 }
+                
+                if (mRewardVideoAd != null) {
+                    try {
+                        MediationBaseManager mediationManager = mRewardVideoAd.getMediationManager();
+                        if (mediationManager != null) {
+                            mediationManager.destroy();
+                        }
+                    } catch (Exception e) {
+                        Log.d(TAG, "销毁mediationManager失败: " + e.getMessage());
+                    }
+                    mRewardVideoAd = null;
+                }
             }
             
             @Override
@@ -236,7 +194,23 @@ public class CsjAdPlugin extends Plugin {
                     result.put("rewardName", extraInfo.getString("reward_name", "金币"));
                 }
                 
-                result.put("ecpm", mRealEcpm);
+                double ecpm = 0;
+                if (mRewardVideoAd != null) {
+                    try {
+                        MediationBaseManager mediationManager = mRewardVideoAd.getMediationManager();
+                        if (mediationManager != null) {
+                            MediationAdEcpmInfo showEcpm = mediationManager.getShowEcpm();
+                            if (showEcpm != null) {
+                                ecpm = showEcpm.getEcpm();
+                                Log.d(TAG, "show后获取eCPM成功: " + ecpm);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.d(TAG, "获取show后eCPM失败: " + e.getMessage());
+                    }
+                }
+                
+                result.put("ecpm", ecpm);
                 
                 notifyListeners("onRewardVerify", result);
                 
@@ -304,11 +278,11 @@ public class CsjAdPlugin extends Plugin {
                 pendingShowCall = call;
                 mRewardVideoAd.showRewardVideoAd(activity);
                 mRewardVideoAd.setAdInteractionListener(mInteractionListener);
-                mRewardVideoAd = null;
             } catch (Exception e) {
                 Log.e(TAG, "展示广告异常: " + e.getMessage(), e);
                 call.reject("展示广告异常: " + e.getMessage());
                 pendingShowCall = null;
+                mRewardVideoAd = null;
             }
         });
     }
