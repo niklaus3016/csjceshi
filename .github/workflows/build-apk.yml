@@ -214,14 +214,23 @@ jobs:
         ./gradlew assembleRelease -PKEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" -PKEY_ALIAS="$KEY_ALIAS"
         
     - name: Calculate Release APK SHA1
+      if: github.event_name != 'pull_request'
       run: |
+        APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+        
+        if [ ! -f "$APK_PATH" ]; then
+          echo "ERROR: Release APK not found at $APK_PATH"
+          ls -la android/app/build/outputs/apk/release/ 2>/dev/null || echo "Release directory doesn't exist"
+          exit 1
+        fi
+        
         echo "========================================"
         echo "Release APK SHA1 Checksum:"
         echo "========================================"
-        sha1sum android/app/build/outputs/apk/release/app-release.apk
+        sha1sum "$APK_PATH"
         echo ""
         echo "Release APK MD5 Checksum:"
-        md5sum android/app/build/outputs/apk/release/app-release.apk
+        md5sum "$APK_PATH"
         echo "========================================"
         
     - name: Upload Release APK
