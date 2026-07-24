@@ -30,18 +30,6 @@ android {
                 keyPassword project.property('KEYSTORE_PASSWORD')
             }
         }
-        debug {
-            storeFile file('release.keystore')
-            if (project.hasProperty('KEYSTORE_PASSWORD')) {
-                storePassword project.property('KEYSTORE_PASSWORD')
-            }
-            if (project.hasProperty('KEY_ALIAS')) {
-                keyAlias project.property('KEY_ALIAS')
-            }
-            if (project.hasProperty('KEYSTORE_PASSWORD')) {
-                keyPassword project.property('KEYSTORE_PASSWORD')
-            }
-        }
     }
     buildTypes {
         release {
@@ -51,7 +39,6 @@ android {
         }
         debug {
             minifyEnabled false
-            signingConfig signingConfigs.debug
         }
     }
 }
