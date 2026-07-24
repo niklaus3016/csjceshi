@@ -23,7 +23,6 @@ public class MainApplication extends Application {
         TTAdSdk.init(this, new TTAdConfig.Builder()
                 .appId(APP_ID)
                 .allowShowNotify(true)
-                .allowShowPageWhenScreenLock(false)
                 .debug(false)
                 .supportMultiProcess(true)
                 .build());
