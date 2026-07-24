@@ -98,8 +98,22 @@ public class CsjAdPlugin extends Plugin {
                     public void onRewardVideoAdLoad(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告加载成功");
                         mRewardVideoAd = ad;
-                        mLastAdRealEcpm = ad.getEcpm();
-                        Log.d(TAG, "加载成功缓存广告ECPM = " + mLastAdRealEcpm);
+                        mLastAdRealEcpm = 0.0;
+                        
+                        try {
+                            Object mediationManager = ad.getClass().getMethod("getMediationManager").invoke(ad);
+                            if (mediationManager != null) {
+                                Object loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                if (loadEcpmObj != null) {
+                                    mLastAdRealEcpm = (double) loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
+                                    Log.d(TAG, "加载成功反射获取ECPM：" + mLastAdRealEcpm);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "loadSuccess 获取ECPM异常", e);
+                            mLastAdRealEcpm = 0.0;
+                        }
+                        
                         setupAdListener(ad);
                         notifyListeners("onAdLoaded", new JSObject());
                     }
@@ -112,8 +126,22 @@ public class CsjAdPlugin extends Plugin {
                     public void onRewardVideoCached(TTRewardVideoAd ad) {
                         Log.d(TAG, "广告缓存成功");
                         mRewardVideoAd = ad;
-                        mLastAdRealEcpm = ad.getEcpm();
-                        Log.d(TAG, "缓存成功缓存广告ECPM = " + mLastAdRealEcpm);
+                        mLastAdRealEcpm = 0.0;
+                        
+                        try {
+                            Object mediationManager = ad.getClass().getMethod("getMediationManager").invoke(ad);
+                            if (mediationManager != null) {
+                                Object loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                if (loadEcpmObj != null) {
+                                    mLastAdRealEcpm = (double) loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
+                                    Log.d(TAG, "缓存成功反射获取ECPM：" + mLastAdRealEcpm);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "cache 获取ECPM异常", e);
+                            mLastAdRealEcpm = 0.0;
+                        }
+                        
                         setupAdListener(ad);
                         notifyListeners("onVideoDownloadSuccess", new JSObject());
                     }
