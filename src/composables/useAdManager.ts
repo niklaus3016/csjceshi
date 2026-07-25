@@ -39,6 +39,7 @@ export function useAdManager(config: AdConfig) {
   let currentSessionId = 0;
   let isProcessing = false; // 是否正在处理广告，防止并发
   let hasShownAd = false; // 是否已经显示过广告（用于防止用户跳过后继续尝试其他广告位）
+  let lastEcpm = 0; // 全局ECPM缓存，用于预加载广告展示时获取ECPM
   
   // 预加载状态管理
   let preloadedAd: {
@@ -1019,6 +1020,15 @@ export function useAdManager(config: AdConfig) {
           
           const color = colors[tag] || 'color: #6B7280';
           console.log(`%c[CSJ][${tag}] ${message}`, color);
+          
+          // 捕获ECPM值，用于预加载广告展示时获取ECPM
+          if (tag === 'ECPM') {
+            const ecpmMatch = message.match(/ECPM=([\d.]+)/);
+            if (ecpmMatch && ecpmMatch[1]) {
+              lastEcpm = parseFloat(ecpmMatch[1]);
+              console.log(`🔄 全局ECPM已更新: ${lastEcpm}`);
+            }
+          }
         };
         
         try {
@@ -1087,7 +1097,7 @@ export function useAdManager(config: AdConfig) {
       
       currentAdSuccess = true;
       
-      const ecpm = result.ecpm || currentEcpm || 0;
+      const ecpm = result.ecpm || currentEcpm || lastEcpm || 0;
       
       console.log(`✅ 预加载广告成功 (${slotId})，ECPM:`, ecpm);
       
