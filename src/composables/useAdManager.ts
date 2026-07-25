@@ -1158,8 +1158,11 @@ export function useAdManager(config: AdConfig) {
       console.log(`⏳ 预加载广告关闭，等待奖励回调... (${slotId})`);
       setTimeout(() => {
         if (!currentAdSuccess && !isResolved) {
-          console.log(`❌ 预加载广告关闭后5秒未获得奖励 (${slotId})，标记为失败`);
-          resolveOnce(null);
+          console.log(`❌ 预加载广告关闭后5秒未获得奖励 (${slotId})，用户中途返回`);
+          isResolved = true;
+          if (extremeTimeoutId) clearTimeout(extremeTimeoutId);
+          cleanupSlotListeners();
+          reject(new Error('用户中途返回'));
         }
       }, 5000);
     };
@@ -1249,14 +1252,16 @@ export function useAdManager(config: AdConfig) {
           isProcessing = false;
           return;
         } catch (error) {
-          console.log(`❌ 预加载广告展示失败，回退到正常加载:`, error);
+          console.log(`❌ 预加载广告展示失败（用户中途返回或其他原因），重置状态:`, error);
+          resetAdState();
+          isProcessing = false;
+          reject(error);
+          return;
         }
       } else {
         console.log('📋 没有预加载广告，开始正常加载');
+        resetAdState();
       }
-      
-      // 只有在需要重新加载时才重置状态
-      resetAdState();
       
       for (let i = 0; i < config.slotIds.length; i++) {
         const slotId = config.slotIds[i];
@@ -1271,7 +1276,11 @@ export function useAdManager(config: AdConfig) {
             return;
           }
         } catch (error) {
-          console.log(`❌ 广告位 ${slotId} 失败:`, error);
+          console.log(`❌ 广告位 ${slotId} 失败（用户中途返回或其他原因）:`, error);
+          resetAdState();
+          isProcessing = false;
+          reject(error);
+          return;
         }
         
         if (i < config.slotIds.length - 1) {
@@ -1281,6 +1290,7 @@ export function useAdManager(config: AdConfig) {
       }
       
       console.log('❌ 所有广告位都失败');
+      resetAdState();
       isProcessing = false;
       reject(new Error('暂无广告'));
     });
@@ -1300,6 +1310,15 @@ export function useAdManager(config: AdConfig) {
           setTimeout(() => {
             smartPreload();
           }, 500);
+        }
+      };
+      
+      const rejectWithError = (error: Error) => {
+        if (!isResolved) {
+          isResolved = true;
+          if (extremeTimeoutId) clearTimeout(extremeTimeoutId);
+          cleanupListeners();
+          reject(error);
         }
       };
       
@@ -1330,8 +1349,8 @@ export function useAdManager(config: AdConfig) {
         console.log(`⏳ 广告关闭，等待奖励回调...`);
         setTimeout(() => {
           if (!isResolved) {
-            console.log(`❌ 广告关闭后5秒未收到奖励回调，标记为失败`);
-            resolveOnce(null);
+            console.log(`❌ 广告关闭后5秒未收到奖励回调，用户中途返回`);
+            rejectWithError(new Error('用户中途返回'));
           }
         }, 5000);
       };
