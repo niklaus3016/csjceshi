@@ -1,6 +1,5 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import BaiduAd from '../plugins/BaiduAdPlugin';
-import { sendRedPacket, recordAdView, getPoolStatus, getUserTickets } from '../api/apiService';
 
 declare global {
   interface Window {
@@ -55,7 +54,6 @@ export function useAdManager(config: AdConfig) {
   const PARALLEL_TIMEOUT = 60000;
   const PRELOAD_TOTAL_TIMEOUT = 120000;
   const GROUP_DELAY = 500;
-  const GROUP5_SLOT_DELAY = 200;
   const REWARD_WAIT_TIMEOUT = 3000;
   
   const delay = (ms: number): Promise<void> => {
@@ -165,137 +163,6 @@ export function useAdManager(config: AdConfig) {
     return false;
   };
   
-  const getDeviceId = (): string => {
-    let deviceId = localStorage.getItem('deviceId');
-    if (!deviceId) {
-      deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('deviceId', deviceId);
-    }
-    return deviceId;
-  };
-
-  const isBiddingSlot = (slotId: string): boolean => {
-    const biddingSlots: string[] = [];
-    return biddingSlots.includes(slotId);
-  };
-
-  let globalSessionId = 0;
-  let currentAdType: 'preload' | 'normal' | 'preloading' = 'normal';
-  let currentAdSlotId = '';
-  let currentAdSuccess = false;
-  let rewardVerifyCallback: ((result: any) => void) | null = null;
-  let adCloseCallback: (() => void) | null = null;
-  let adShowCallback: ((data: any) => void) | null = null;
-  let adFailedCallback: ((error: any) => void) | null = null;
-  let videoDownloadSuccessCallback: (() => void) | null = null;
-  let adLoadedCallback: (() => void) | null = null;
-
-  const resetAdSession = (adType: 'preload' | 'normal' | 'preloading', slotId: string) => {
-    globalSessionId++;
-    currentAdType = adType;
-    currentAdSlotId = slotId;
-    currentAdSuccess = false;
-    rewardVerifyCallback = null;
-    adCloseCallback = null;
-    adShowCallback = null;
-    adFailedCallback = null;
-    videoDownloadSuccessCallback = null;
-    adLoadedCallback = null;
-    console.log(`🆕 新广告会话开始，ID: ${globalSessionId}，类型: ${adType}，广告位: ${slotId}`);
-  };
-
-  const onRewardVerify = (result: any) => {
-    console.log(`[CSJ][REWARD] 获得奖励: isRewardValid=${result.isRewardValid}, ECPM=${result.ecpm}`);
-    
-    if (result.ecpm) {
-      lastEcpm = result.ecpm;
-    }
-    
-    currentAdSuccess = true;
-    
-    if (rewardVerifyCallback) {
-      rewardVerifyCallback(result);
-    }
-  };
-
-  const onAdShow = (data: any) => {
-    console.log(`📺 广告页面已打开 (${currentAdSlotId})`);
-    
-    if (data && data.ecpm) {
-      lastEcpm = data.ecpm;
-      console.log(`📺 广告页面已打开 (${currentAdSlotId})，ECPM=${data.ecpm}`);
-    }
-    
-    if (adShowCallback) {
-      adShowCallback(data);
-    }
-  };
-
-  const onAdClose = () => {
-    console.log(`⏳ 广告关闭，等待奖励回调... (${currentAdSlotId})`);
-    
-    if (adCloseCallback) {
-      adCloseCallback();
-    }
-  };
-
-  const onAdFailed = (error: any) => {
-    console.log(`❌ 广告展示失败 (${currentAdSlotId}):`, error);
-    
-    if (adFailedCallback) {
-      adFailedCallback(error);
-    }
-  };
-
-  const onVideoDownloadSuccess = () => {
-    console.log(`✅ 广告缓存成功 (${currentAdSlotId})`);
-    
-    if (videoDownloadSuccessCallback) {
-      videoDownloadSuccessCallback();
-    }
-  };
-
-  const onAdLoaded = () => {
-    console.log(`✅ 广告加载成功 (${currentAdSlotId})`);
-    
-    if (adLoadedCallback) {
-      adLoadedCallback();
-    }
-  };
-
-  const onCsjDebugLog = (data: any) => {
-    if (!data) return;
-    const tag = data.tag || 'UNKNOWN';
-    const message = data.message || '';
-    const timestamp = data.timestamp || Date.now();
-    
-    const colors: { [key: string]: string } = {
-      LOAD: 'color: #3B82F6',
-      SUCCESS: 'color: #10B981',
-      ERROR: 'color: #EF4444',
-      ECPM: 'color: #8B5CF6',
-      ECPM_ERROR: 'color: #F59E0B',
-      AD: 'color: #06B6D4',
-      REWARD: 'color: #EC4899',
-      SHOW: 'color: #14B8A6',
-      DOWNLOAD: 'color: #F97316',
-      STATUS: 'color: #6B7280',
-      AUTH: 'color: #84CC16',
-      COUPON: 'color: #A855F7'
-    };
-    
-    const color = colors[tag] || 'color: #6B7280';
-    console.log(`%c[CSJ][${tag}] ${message}`, color);
-    
-    if (tag === 'ECPM') {
-      const ecpmMatch = message.match(/ECPM=([\d.]+)/);
-      if (ecpmMatch && ecpmMatch[1]) {
-        lastEcpm = parseFloat(ecpmMatch[1]);
-        console.log(`🔄 全局ECPM已更新: ${lastEcpm}`);
-      }
-    }
-  };
-
   const getNextSlotId = (): string => {
     if (!config.slotIds?.length) throw new Error('广告位配置为空');
     const slotId = config.slotIds[currentSlotIndex];
@@ -332,27 +199,51 @@ export function useAdManager(config: AdConfig) {
     return new Promise((resolve) => {
       let isResolved = false;
       
-      resetAdSession('preloading', slotId);
-      
-      videoDownloadSuccessCallback = () => {
+      const onVideoDownloadSuccess = () => {
         if (!isResolved) {
           isResolved = true;
+          cleanupListeners();
           console.log(`✅ 串行预加载成功: ${slotId}`);
           resolve(true);
         }
       };
       
-      adFailedCallback = () => {
+      const onVideoDownloadFailed = () => {
         if (!isResolved) {
           isResolved = true;
-          console.log(`❌ 串行预加载失败: ${slotId}`);
+          cleanupListeners();
+          console.log(`❌ 串行预加载失败: ${slotId} (视频下载失败)`);
           resolve(false);
         }
       };
       
+      const onAdFailed = (error: any) => {
+        if (!isResolved) {
+          isResolved = true;
+          cleanupListeners();
+          console.log(`❌ 串行预加载失败: ${slotId} (广告加载失败)`, error);
+          resolve(false);
+        }
+      };
+      
+      const cleanupListeners = () => {
+        try {
+          BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+          BaiduAd.removeListener('onVideoDownloadFailed', onVideoDownloadFailed);
+          BaiduAd.removeListener('onAdFailed', onAdFailed);
+        } catch (e) {
+          // 忽略清理错误
+        }
+      };
+      
+      BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+      BaiduAd.addListener('onVideoDownloadFailed', onVideoDownloadFailed);
+      BaiduAd.addListener('onAdFailed', onAdFailed);
+      
       setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
+          cleanupListeners();
           console.log(`⏱️ 串行预加载超时: ${slotId}`);
           resolve(false);
         }
@@ -379,6 +270,7 @@ export function useAdManager(config: AdConfig) {
       }).catch((error) => {
         if (!isResolved) {
           isResolved = true;
+          cleanupListeners();
           console.log(`❌ 串行预加载请求失败: ${slotId}`, error);
           resolve(false);
         }
@@ -482,27 +374,24 @@ export function useAdManager(config: AdConfig) {
     preloadedAd = null;
     hasShownAd = true;
     
-    resetAdSession('preload', slotId);
-    
     let isResolved = false;
+    let currentAdSuccess = false;
     let localEcpm = lastEcpm;
     
     const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
       if (!isResolved) {
         isResolved = true;
+        cleanupSlotListeners();
         if (result) {
           resolve(result);
         } else {
           reject(new Error('广告显示失败'));
         }
-        setTimeout(() => {
-          smartPreload();
-        }, 500);
       }
     };
     
-    rewardVerifyCallback = (result: any) => {
-      if (isResolved) return;
+    const onRewardVerify = (result: any) => {
+      if (currentAdSuccess || isResolved) return;
       
       currentAdSuccess = true;
       
@@ -534,15 +423,27 @@ export function useAdManager(config: AdConfig) {
       console.log(`📋 预加载广告调度状态更新: start_group=${state.start_group}, hit_streak=${state.hit_streak}`);
       
       resolveOnce({ ecpm, slotId });
+      
+      setTimeout(() => {
+        smartPreload();
+      }, 500);
     };
     
-    adShowCallback = (data: any) => {
+    const onAdShow = (data: any) => {
       if (data && data.ecpm) {
         localEcpm = data.ecpm;
+        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM=${data.ecpm}`);
+      } else {
+        console.log(`📺 预加载广告页面已打开 (${slotId})`);
       }
+      
+      setTimeout(() => {
+        smartPreload();
+      }, 500);
     };
     
-    adCloseCallback = () => {
+    const onAdClose = () => {
+      console.log(`⏳ 预加载广告关闭，等待奖励回调... (${slotId})`);
       setTimeout(() => {
         if (!currentAdSuccess && !isResolved) {
           console.log(`❌ 预加载广告关闭后未获得奖励 (${slotId})，标记为失败`);
@@ -551,27 +452,50 @@ export function useAdManager(config: AdConfig) {
       }, REWARD_WAIT_TIMEOUT);
     };
     
-    adFailedCallback = (error: any) => {
+    const onAdFailed = (error: any) => {
       if (isResolved) return;
       console.log(`❌ 预加载广告展示失败 (${slotId}):`, error);
       resolveOnce(null);
     };
+    
+    const onVideoDownloadSuccess = () => {
+      if (isResolved) return;
+      console.log(`✅ 预加载广告缓存成功 (${slotId})`);
+    };
+    
+    const onAdLoaded = () => {
+      if (isResolved) return;
+      console.log(`✅ 预加载广告加载成功 (${slotId})`);
+    };
+    
+    const cleanupSlotListeners = () => {
+      try {
+        BaiduAd.removeListener('onRewardVerify', onRewardVerify);
+        BaiduAd.removeListener('onAdClose', onAdClose);
+        BaiduAd.removeListener('onAdShow', onAdShow);
+        BaiduAd.removeListener('onAdFailed', onAdFailed);
+        BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+        BaiduAd.removeListener('onAdLoaded', onAdLoaded);
+      } catch (e) {
+        console.warn(`清理预加载广告监听器失败 (${slotId}):`, e);
+      }
+    };
+    
+    BaiduAd.addListener('onRewardVerify', onRewardVerify);
+    BaiduAd.addListener('onAdClose', onAdClose);
+    BaiduAd.addListener('onAdShow', onAdShow);
+    BaiduAd.addListener('onAdFailed', onAdFailed);
+    BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+    BaiduAd.addListener('onAdLoaded', onAdLoaded);
     
     try {
       await BaiduAd.showRewardVideoAd();
       console.log(`✅ 预加载广告显示命令已发送 (${slotId})`);
     } catch (error) {
       console.error(`❌ 显示预加载广告失败 (${slotId}):`, error);
+      cleanupSlotListeners();
       reject(new Error('广告显示失败'));
     }
-  };
-
-  const getUserId = (): string | null => {
-    return localStorage.getItem('userId') || null;
-  };
-
-  const getEmployeeId = (): string | null => {
-    return localStorage.getItem('empId') || null;
   };
 
   const showAd = async (): Promise<{ ecpm: number; slotId: string }> => {
@@ -639,11 +563,10 @@ export function useAdManager(config: AdConfig) {
     return new Promise((resolve) => {
       let isResolved = false;
       
-      resetAdSession('normal', slotId);
-      
       const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
         if (!isResolved) {
           isResolved = true;
+          cleanupListeners();
           resolve(result);
           setTimeout(() => {
             smartPreload();
@@ -651,20 +574,22 @@ export function useAdManager(config: AdConfig) {
         }
       };
       
-      rewardVerifyCallback = (result: any) => {
+      const onRewardVerify = (result: any) => {
         if (isResolved) return;
         
         const ecpm = result.ecpm || lastEcpm || 0;
         resolveOnce({ ecpm, slotId });
       };
       
-      adFailedCallback = (error: any) => {
+      const onAdFailed = (error: any) => {
         if (isResolved) return;
         console.log(`❌ 广告位 ${slotId} 加载失败:`, error);
         resolveOnce(null);
       };
       
-      adCloseCallback = () => {
+      const onAdClose = () => {
+        if (isResolved) return;
+        console.log(`⏳ 广告关闭，等待奖励回调...`);
         setTimeout(() => {
           if (!isResolved) {
             console.log(`❌ 广告关闭后未收到奖励回调，标记为失败`);
@@ -673,7 +598,12 @@ export function useAdManager(config: AdConfig) {
         }, REWARD_WAIT_TIMEOUT);
       };
       
-      videoDownloadSuccessCallback = () => {
+      const onAdLoaded = (data: any) => {
+        if (isResolved) return;
+        console.log(`✅ 广告位 ${slotId} 加载成功`);
+      };
+      
+      const onVideoDownloadSuccess = (data: any) => {
         if (isResolved) return;
         console.log(`✅ 广告位 ${slotId} 缓存成功，准备显示`);
         try {
@@ -683,6 +613,34 @@ export function useAdManager(config: AdConfig) {
           resolveOnce(null);
         }
       };
+      
+      const onAdShow = () => {
+        if (!isResolved) {
+          clearTimeout(slotTimeoutId);
+          console.log('✅ 广告开始展示，清除加载超时定时器');
+        }
+        console.log('📺 广告开始展示');
+      };
+      
+      const cleanupListeners = () => {
+        try {
+          BaiduAd.removeListener('onRewardVerify', onRewardVerify);
+          BaiduAd.removeListener('onAdFailed', onAdFailed);
+          BaiduAd.removeListener('onAdClose', onAdClose);
+          BaiduAd.removeListener('onAdLoaded', onAdLoaded);
+          BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+          BaiduAd.removeListener('onAdShow', onAdShow);
+        } catch (e) {
+          console.warn(`清理监听器失败 (${slotId}):`, e);
+        }
+      };
+      
+      BaiduAd.addListener('onRewardVerify', onRewardVerify);
+      BaiduAd.addListener('onAdFailed', onAdFailed);
+      BaiduAd.addListener('onAdClose', onAdClose);
+      BaiduAd.addListener('onAdLoaded', onAdLoaded);
+      BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+      BaiduAd.addListener('onAdShow', onAdShow);
       
       const employeeId = localStorage.getItem('employeeId') || '';
       const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
@@ -738,17 +696,16 @@ export function useAdManager(config: AdConfig) {
         let slotTimeoutId: any = null;
         let currentAdSuccess = false;
         
-        resetAdSession('normal', slotId);
-        
         const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
           if (!isResolved) {
             isResolved = true;
+            cleanupSlotListeners();
             if (slotTimeoutId) clearTimeout(slotTimeoutId);
             resolve(result);
           }
         };
         
-        rewardVerifyCallback = (result: any) => {
+        const onRewardVerify = (result: any) => {
           if (currentAdSuccess || isResolved) return;
           
           currentAdSuccess = true;
@@ -761,13 +718,13 @@ export function useAdManager(config: AdConfig) {
           resolveOnce({ ecpm, slotId });
         };
         
-        adFailedCallback = (error: any) => {
+        const onAdFailed = (error: any) => {
           if (currentAdSuccess || isResolved) return;
           console.warn(`⚠️ 广告加载失败 (${slotId}):`, error?.error || error);
           resolveOnce(null);
         };
         
-        videoDownloadSuccessCallback = async () => {
+        const onVideoDownloadSuccess = async () => {
           if (currentAdSuccess || isResolved) return;
           
           console.log(`✅ 视频下载成功 (${slotId})，准备显示广告`);
@@ -783,7 +740,13 @@ export function useAdManager(config: AdConfig) {
           }
         };
         
-        adCloseCallback = () => {
+        const onVideoDownloadFailed = () => {
+          if (currentAdSuccess || isResolved) return;
+          console.warn(`⚠️ 视频下载失败 (${slotId})`);
+          resolveOnce(null);
+        };
+        
+        const onAdClose = () => {
           if (!currentAdSuccess) {
             console.log(`广告关闭但未获得奖励 (${slotId})，标记为失败`);
             setTimeout(() => {
@@ -793,6 +756,24 @@ export function useAdManager(config: AdConfig) {
             }, REWARD_WAIT_TIMEOUT);
           }
         };
+        
+        const cleanupSlotListeners = () => {
+          try {
+            BaiduAd.removeListener('onRewardVerify', onRewardVerify);
+            BaiduAd.removeListener('onAdFailed', onAdFailed);
+            BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+            BaiduAd.removeListener('onVideoDownloadFailed', onVideoDownloadFailed);
+            BaiduAd.removeListener('onAdClose', onAdClose);
+          } catch (e) {
+            console.warn(`清理监听器失败 (${slotId}):`, e);
+          }
+        };
+        
+        BaiduAd.addListener('onRewardVerify', onRewardVerify);
+        BaiduAd.addListener('onAdFailed', onAdFailed);
+        BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+        BaiduAd.addListener('onVideoDownloadFailed', onVideoDownloadFailed);
+        BaiduAd.addListener('onAdClose', onAdClose);
         
         const employeeId = localStorage.getItem('employeeId') || '';
         const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
@@ -903,19 +884,11 @@ export function useAdManager(config: AdConfig) {
     isAdLoading.value = false;
     isAdReady.value = false;
     hasShownAd = false;
-    globalSessionId++;
-    console.log(`🆕 新会话开始，会话ID: ${globalSessionId}`);
+    console.log(`🆕 新会话开始`);
   };
 
   const cleanupListeners = () => {
     console.log('🔄 清理广告监听器...');
-    
-    rewardVerifyCallback = null;
-    adCloseCallback = null;
-    adShowCallback = null;
-    adFailedCallback = null;
-    videoDownloadSuccessCallback = null;
-    adLoadedCallback = null;
     
     [timeoutId, retryTimeoutId, slotTimeoutId].forEach(id => {
       if (id) {
@@ -924,12 +897,44 @@ export function useAdManager(config: AdConfig) {
       }
     });
     
-    console.log('✅ 监听器回调清理完成');
+    console.log('✅ 定时器清理完成');
   };
 
   const isNativeApp = () => {
     return typeof window !== 'undefined' && 
            (window as any).Capacitor?.getPlatform() === 'android';
+  };
+
+  const onCsjDebugLog = (data: any) => {
+    if (!data) return;
+    const tag = data.tag || 'UNKNOWN';
+    const message = data.message || '';
+    
+    const colors: { [key: string]: string } = {
+      LOAD: 'color: #3B82F6',
+      SUCCESS: 'color: #10B981',
+      ERROR: 'color: #EF4444',
+      ECPM: 'color: #8B5CF6',
+      ECPM_ERROR: 'color: #F59E0B',
+      AD: 'color: #06B6D4',
+      REWARD: 'color: #EC4899',
+      SHOW: 'color: #14B8A6',
+      DOWNLOAD: 'color: #F97316',
+      STATUS: 'color: #6B7280',
+      AUTH: 'color: #84CC16',
+      COUPON: 'color: #A855F7'
+    };
+    
+    const color = colors[tag] || 'color: #6B7280';
+    console.log(`%c[CSJ][${tag}] ${message}`, color);
+    
+    if (tag === 'ECPM') {
+      const ecpmMatch = message.match(/ECPM=([\d.]+)/);
+      if (ecpmMatch && ecpmMatch[1]) {
+        lastEcpm = parseFloat(ecpmMatch[1]);
+        console.log(`🔄 全局ECPM已更新: ${lastEcpm}`);
+      }
+    }
   };
 
   const initializeAdSdk = async () => {
@@ -956,15 +961,9 @@ export function useAdManager(config: AdConfig) {
         
         try {
           BaiduAd.addListener('onCsjDebugLog', onCsjDebugLog);
-          BaiduAd.addListener('onRewardVerify', onRewardVerify);
-          BaiduAd.addListener('onAdShow', onAdShow);
-          BaiduAd.addListener('onAdClose', onAdClose);
-          BaiduAd.addListener('onAdFailed', onAdFailed);
-          BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-          BaiduAd.addListener('onAdLoaded', onAdLoaded);
-          console.log('🔍 全局广告监听器已注册');
+          console.log('🔍 CsjAd调试日志监听器已注册');
         } catch (e) {
-          console.warn('注册广告监听器失败:', e);
+          console.warn('注册CsjAd调试日志监听器失败:', e);
         }
         
         return;
