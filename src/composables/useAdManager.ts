@@ -1234,6 +1234,12 @@ export function useAdManager(config: AdConfig) {
       BaiduAd.addListener('onAdClose', onAdClose);
       BaiduAd.addListener('onAdLoaded', onAdLoaded);
       BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+      BaiduAd.addListener('onAdShow', () => {
+        if (!isResolved) {
+          clearTimeout(slotTimeoutId);
+          console.log('✅ 广告开始展示，清除加载超时定时器');
+        }
+      });
       
       const employeeId = localStorage.getItem('employeeId') || '';
       let deviceId = localStorage.getItem('deviceId');
