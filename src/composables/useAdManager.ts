@@ -1421,10 +1421,19 @@ export function useAdManager(config: AdConfig) {
       BaiduAd.addListener('onAdLoaded', onAdLoaded);
       BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
       
+      const employeeId = localStorage.getItem('employeeId') || '';
+      let deviceId = localStorage.getItem('deviceId');
+      if (!deviceId) {
+        deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('deviceId', deviceId);
+      }
+      
       BaiduAd.loadRewardVideoAd({ 
         adId: slotId,
-        userId: 'user_' + Date.now(),
+        userId: 'user_' + employeeId + '_' + Date.now(),
         extraData: JSON.stringify({ 
+          employeeId: employeeId,
+          deviceId: deviceId,
           timestamp: Date.now(),
           slotId: slotId,
           appId: config.appId
