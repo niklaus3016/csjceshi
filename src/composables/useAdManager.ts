@@ -1091,9 +1091,6 @@ export function useAdManager(config: AdConfig) {
         } else {
           reject(new Error('广告显示失败'));
         }
-        setTimeout(() => {
-          smartPreload();
-        }, 500);
       }
     };
     
@@ -1139,6 +1136,7 @@ export function useAdManager(config: AdConfig) {
       } else {
         console.log(`📺 预加载广告页面已打开 (${slotId})`);
       }
+      smartPreload();
     };
     
     const onAdClose = () => {
