@@ -1152,6 +1152,22 @@ export function useAdManager(config: AdConfig) {
       console.log('所有广告位:', config.slotIds);
       console.log('是否原生环境:', isNativeApp());
       
+      // 检查是否有预加载的广告
+      if (preloadedAd && preloadedAd.isReady) {
+        console.log(`✅ 发现预加载广告，直接展示: ${preloadedAd.slotId}`);
+        const slotId = preloadedAd.slotId;
+        
+        try {
+          await showPreloadedAd(resolve, reject);
+          isProcessing = false;
+          return;
+        } catch (error) {
+          console.log(`❌ 预加载广告展示失败:`, error);
+        }
+      } else {
+        console.log('📋 没有预加载广告，开始正常加载');
+      }
+      
       for (let i = 0; i < config.slotIds.length; i++) {
         const slotId = config.slotIds[i];
         console.log(`🔄 尝试广告位 [${i + 1}/${config.slotIds.length}]: ${slotId}`);
