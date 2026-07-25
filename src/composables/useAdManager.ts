@@ -1078,7 +1078,7 @@ export function useAdManager(config: AdConfig) {
     // 注册监听器
     let isResolved = false;
     let currentAdSuccess = false;
-    let currentEcpm = 0;
+    let currentEcpm = lastEcpm; // 立即保存当前全局ECPM，防止被新预加载覆盖
     
     const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
       if (!isResolved) {
@@ -1097,7 +1097,7 @@ export function useAdManager(config: AdConfig) {
       
       currentAdSuccess = true;
       
-      const ecpm = result.ecpm || currentEcpm || lastEcpm || 0;
+      const ecpm = result.ecpm || currentEcpm || 0;
       
       console.log(`✅ 预加载广告成功 (${slotId})，ECPM:`, ecpm);
       
@@ -1286,7 +1286,7 @@ export function useAdManager(config: AdConfig) {
       const onRewardVerify = (result: any) => {
         if (isResolved) return;
         
-        const ecpm = result.ecpm || 0;
+        const ecpm = result.ecpm || lastEcpm || 0;
         
         resolveOnce({ ecpm, slotId });
       };
