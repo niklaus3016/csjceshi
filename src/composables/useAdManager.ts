@@ -1305,7 +1305,7 @@ export function useAdManager(config: AdConfig) {
             console.log(`❌ 广告关闭后未收到奖励回调，标记为失败`);
             resolveOnce(null);
           }
-        }, 1500);
+        }, 3000);
       };
       
       const onAdLoaded = (data: any) => {
