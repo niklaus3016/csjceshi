@@ -1048,6 +1048,8 @@ export function useAdManager(config: AdConfig) {
     const onRewardVerify = (result: any) => {
       if (currentAdSuccess || isResolved) return;
       
+      currentAdSuccess = true;
+      
       const ecpm = result.ecpm || 0;
       
       console.log(`✅ 预加载广告成功 (${slotId})，ECPM:`, ecpm);
@@ -1144,7 +1146,6 @@ export function useAdManager(config: AdConfig) {
       }
       
       isProcessing = true;
-      resetAdState();
       currentResolve = resolve;
       currentReject = reject;
       
@@ -1152,10 +1153,10 @@ export function useAdManager(config: AdConfig) {
       console.log('所有广告位:', config.slotIds);
       console.log('是否原生环境:', isNativeApp());
       
-      // 检查是否有预加载的广告
+      // 先检查是否有预加载的广告（不要先调用resetAdState，否则会清除预加载状态）
+      console.log(`🔍 预加载广告检查: preloadedAd=${JSON.stringify(preloadedAd)}`);
       if (preloadedAd && preloadedAd.isReady) {
         console.log(`✅ 发现预加载广告，直接展示: ${preloadedAd.slotId}`);
-        const slotId = preloadedAd.slotId;
         
         try {
           await showPreloadedAd(resolve, reject);
@@ -1163,10 +1164,16 @@ export function useAdManager(config: AdConfig) {
           return;
         } catch (error) {
           console.log(`❌ 预加载广告展示失败:`, error);
+          isProcessing = false;
+          reject(error);
+          return;
         }
       } else {
         console.log('📋 没有预加载广告，开始正常加载');
       }
+      
+      // 只有在需要重新加载时才重置状态
+      resetAdState();
       
       for (let i = 0; i < config.slotIds.length; i++) {
         const slotId = config.slotIds[i];
@@ -1235,13 +1242,7 @@ export function useAdManager(config: AdConfig) {
       
       const onAdLoaded = (data: any) => {
         if (isResolved) return;
-        console.log(`✅ 广告位 ${slotId} 加载成功，准备显示`);
-        try {
-          BaiduAd.showRewardVideoAd();
-        } catch (e) {
-          console.error('❌ 显示广告失败:', e);
-          resolveOnce(null);
-        }
+        console.log(`✅ 广告位 ${slotId} 加载成功`);
       };
       
       const onVideoDownloadSuccess = (data: any) => {
@@ -1255,12 +1256,7 @@ export function useAdManager(config: AdConfig) {
         }
       };
       
-      BaiduAd.addListener('onRewardVerify', onRewardVerify);
-      BaiduAd.addListener('onAdFailed', onAdFailed);
-      BaiduAd.addListener('onAdClose', onAdClose);
-      BaiduAd.addListener('onAdLoaded', onAdLoaded);
-      BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-      BaiduAd.addListener('onAdShow', () => {
+      const onAdShow = () => {
         if (!isResolved) {
           clearTimeout(slotTimeoutId);
           console.log('✅ 广告开始展示，清除加载超时定时器');
@@ -1269,7 +1265,27 @@ export function useAdManager(config: AdConfig) {
         setTimeout(() => {
           smartPreload();
         }, 1000);
-      });
+      };
+      
+      const cleanupListeners = () => {
+        try {
+          BaiduAd.removeListener('onRewardVerify', onRewardVerify);
+          BaiduAd.removeListener('onAdFailed', onAdFailed);
+          BaiduAd.removeListener('onAdClose', onAdClose);
+          BaiduAd.removeListener('onAdLoaded', onAdLoaded);
+          BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+          BaiduAd.removeListener('onAdShow', onAdShow);
+        } catch (e) {
+          console.warn(`清理监听器失败 (${slotId}):`, e);
+        }
+      };
+      
+      BaiduAd.addListener('onRewardVerify', onRewardVerify);
+      BaiduAd.addListener('onAdFailed', onAdFailed);
+      BaiduAd.addListener('onAdClose', onAdClose);
+      BaiduAd.addListener('onAdLoaded', onAdLoaded);
+      BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+      BaiduAd.addListener('onAdShow', onAdShow);
       
       const employeeId = localStorage.getItem('employeeId') || '';
       let deviceId = localStorage.getItem('deviceId');
@@ -1290,7 +1306,7 @@ export function useAdManager(config: AdConfig) {
         })
       });
       
-      setTimeout(() => {
+      slotTimeoutId = setTimeout(() => {
         if (!isResolved) {
           console.log(`⏱️ 广告位 ${slotId} 超时`);
           resolveOnce(null);
