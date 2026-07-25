@@ -1080,8 +1080,10 @@ export function useAdManager(config: AdConfig) {
     };
     
     const onAdShow = () => {
-      console.log(`📺 预加载广告页面已打开 (${slotId})，智能触发预加载`);
-      smartPreload();
+      console.log(`📺 预加载广告页面已打开 (${slotId})，延迟1秒触发预加载`);
+      setTimeout(() => {
+        smartPreload();
+      }, 1000);
     };
     
     const onAdClose = () => {
@@ -1247,6 +1249,10 @@ export function useAdManager(config: AdConfig) {
           clearTimeout(slotTimeoutId);
           console.log('✅ 广告开始展示，清除加载超时定时器');
         }
+        console.log('📺 广告开始展示，延迟1秒触发预加载');
+        setTimeout(() => {
+          smartPreload();
+        }, 1000);
       });
       
       const employeeId = localStorage.getItem('employeeId') || '';
