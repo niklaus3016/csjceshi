@@ -1144,10 +1144,11 @@ export function useAdManager(config: AdConfig) {
           console.warn('注册CsjAd调试日志监听器失败:', e);
         }
         
-        setTimeout(() => {
-          console.log('📱 原生环境开始预加载广告');
-          preloadNextAd();
-        }, 500);
+        // 注释掉自动预加载，改为手动点击时加载
+        // setTimeout(() => {
+        //   console.log('📱 原生环境开始预加载广告');
+        //   preloadNextAd();
+        // }, 500);
         
         return;
       }
@@ -1313,99 +1314,97 @@ export function useAdManager(config: AdConfig) {
 
   const showAd = async (): Promise<{ ecpm: number; slotId: string }> => {
     return new Promise(async (resolve, reject) => {
-      // 防止并发请求
       if (isProcessing) {
         console.log('⚠️ 已有广告正在处理，请等待');
         reject(new Error('已有广告正在处理'));
         return;
       }
       
-      // 红包触发逻辑已移到广告成功后
-      
       isProcessing = true;
       resetAdState();
       currentResolve = resolve;
       currentReject = reject;
       
-      console.log('========== 开始加载激励视频广告 ==========');
+      console.log('========== 开始加载激励视频广告（简单串行轮询）==========');
       console.log('所有广告位:', config.slotIds);
       console.log('是否原生环境:', isNativeApp());
       
-      // 检查是否有预加载的广告
-      if (preloadedAd && preloadedAd.isReady) {
-        console.log('🚀 检测到预加载的广告，准备使用');
-        try {
-          await showPreloadedAd(resolve, reject);
-          isProcessing = false;
-          // 使用预加载成功，智能触发预加载为下次做准备
-          console.log('📋 直接使用预加载成功，智能触发预加载');
-          smartPreload();
-          return;
-        } catch (error) {
-          console.log('预加载广告显示失败，开始新的预加载');
-          // 继续预加载流程
-        }
-      }
-      
-      // 如果正在预加载，等待预加载完成
-      if (isPreloading && preloadingPromise) {
-        console.log('⏳ 正在等待预加载完成...');
-        await preloadingPromise;
+      for (let i = 0; i < config.slotIds.length; i++) {
+        const slotId = config.slotIds[i];
+        console.log(`🔄 尝试广告位 [${i + 1}/${config.slotIds.length}]: ${slotId}`);
         
-        // 等待完成后，检查是否有预加载的广告
-        if (preloadedAd && preloadedAd.isReady) {
-          console.log('🚀 预加载完成，准备使用');
-          try {
-            await showPreloadedAd(resolve, reject);
+        try {
+          const result = await trySingleAdSlot(slotId);
+          if (result) {
+            console.log(`✅ 广告位 ${slotId} 成功，eCPM: ${result.ecpm}`);
             isProcessing = false;
-            // 等待预加载后使用成功，智能触发预加载为下次做准备
-            console.log('📋 等待预加载后使用成功，智能触发预加载');
-            smartPreload();
+            resolve(result);
             return;
-          } catch (error) {
-            console.log('预加载广告显示失败');
           }
-        }
-      }
-      
-      // 没有预加载的广告，也没有正在进行的预加载，开始新的预加载
-      console.log('🔄 没有预加载的广告，开始预加载...');
-      await preloadNextAd();
-      
-      // 预加载完成后，检查是否有预加载的广告
-      if (preloadedAd && preloadedAd.isReady) {
-        console.log('🚀 预加载成功，准备使用');
-        try {
-          await showPreloadedAd(resolve, reject);
-          isProcessing = false;
-          // 使用预加载成功，智能触发预加载为下次做准备
-          console.log('📋 预加载广告使用成功，智能触发预加载');
-          smartPreload();
-          return;
         } catch (error) {
-          console.log('预加载广告显示失败');
-          isProcessing = false;
-          reject(new Error('暂无广告'));
-          return;
-        }
-      } else {
-        console.log('❌ 预加载失败，使用智能瀑布流直接请求');
-        // 预加载失败，使用智能瀑布流调度
-        const waterfallResult = await executeSmartWaterfall();
-        
-        if (waterfallResult) {
-          console.log(`� 智能瀑布流命中，广告位：${waterfallResult.slotId}，eCPM：${waterfallResult.ecpm}`);
-          resolve(waterfallResult);
-          isProcessing = false;
-          smartPreload();
-          return;
+          console.log(`❌ 广告位 ${slotId} 失败:`, error);
         }
         
-        console.log('❌ 智能瀑布流也未命中任何广告');
-        isProcessing = false;
-        reject(new Error('暂无广告'));
-        return;
+        if (i < config.slotIds.length - 1) {
+          console.log(`⏱️ 等待 500ms 后尝试下一个广告位...`);
+          await delay(500);
+        }
       }
+      
+      console.log('❌ 所有广告位都失败');
+      isProcessing = false;
+      reject(new Error('暂无广告'));
+    });
+  };
+  
+  const trySingleAdSlot = async (slotId: string): Promise<{ ecpm: number; slotId: string } | null> => {
+    return new Promise((resolve, reject) => {
+      let isResolved = false;
+      
+      const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
+        if (!isResolved) {
+          isResolved = true;
+          cleanupListeners();
+          resolve(result);
+        }
+      };
+      
+      const onRewardVerify = (result: any) => {
+        if (isResolved) return;
+        
+        let ecpm = result.ecpm || 0;
+        if (ecpm === 0) {
+          console.log('📊 ECPM为0，使用模拟值');
+          const simulatedEcpm = generateSimulatedEcpm(slotId);
+          ecpm = calculateActualEcpm(simulatedEcpm);
+        }
+        
+        resolveOnce({ ecpm, slotId });
+      };
+      
+      const onAdFailed = (error: any) => {
+        if (isResolved) return;
+        console.log(`❌ 广告位 ${slotId} 加载失败:`, error);
+        resolveOnce(null);
+      };
+      
+      const onAdClose = () => {
+        if (isResolved) return;
+        resolveOnce(null);
+      };
+      
+      BaiduAd.addListener('onRewardVerify', onRewardVerify);
+      BaiduAd.addListener('onAdFailed', onAdFailed);
+      BaiduAd.addListener('onAdClose', onAdClose);
+      
+      BaiduAd.loadRewardVideoAd({ adId: slotId });
+      
+      setTimeout(() => {
+        if (!isResolved) {
+          console.log(`⏱️ 广告位 ${slotId} 超时`);
+          resolveOnce(null);
+        }
+      }, 60000);
     });
   };
 
