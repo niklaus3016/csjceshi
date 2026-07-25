@@ -1023,7 +1023,7 @@ export function useAdManager(config: AdConfig) {
     const slotId = preloadedAd.slotId;
     console.log(`🚀 使用预加载的广告位: ${slotId}`);
     
-    // 清除预加载状态
+    // 清除预加载状态（必须在这里清除，防止重复使用）
     preloadedAd = null;
     
     // 设置广告显示标志
@@ -1032,6 +1032,7 @@ export function useAdManager(config: AdConfig) {
     // 注册监听器
     let isResolved = false;
     let currentAdSuccess = false;
+    let currentEcpm = 0;
     
     const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
       if (!isResolved) {
@@ -1050,11 +1051,10 @@ export function useAdManager(config: AdConfig) {
       
       currentAdSuccess = true;
       
-      const ecpm = result.ecpm || 0;
+      const ecpm = result.ecpm || currentEcpm || 0;
       
       console.log(`✅ 预加载广告成功 (${slotId})，ECPM:`, ecpm);
       
-      // 更新调度器状态（与 executeSmartWaterfall 逻辑一致）
       const state = loadSchedulerState();
       checkAndCleanupExpiredState(state);
       state.expose_count += 1;
@@ -1081,8 +1081,13 @@ export function useAdManager(config: AdConfig) {
       resolveOnce({ ecpm, slotId });
     };
     
-    const onAdShow = () => {
-      console.log(`📺 预加载广告页面已打开 (${slotId})，延迟1秒触发预加载`);
+    const onAdShow = (data: any) => {
+      if (data && data.ecpm) {
+        currentEcpm = data.ecpm;
+        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM=${currentEcpm}，延迟1秒触发预加载`);
+      } else {
+        console.log(`📺 预加载广告页面已打开 (${slotId})，延迟1秒触发预加载`);
+      }
       setTimeout(() => {
         smartPreload();
       }, 1000);
@@ -1098,11 +1103,30 @@ export function useAdManager(config: AdConfig) {
       }, 3000);
     };
     
+    const onAdFailed = (error: any) => {
+      if (isResolved) return;
+      console.log(`❌ 预加载广告展示失败 (${slotId}):`, error);
+      resolveOnce(null);
+    };
+    
+    const onVideoDownloadSuccess = () => {
+      if (isResolved) return;
+      console.log(`✅ 预加载广告缓存成功 (${slotId})`);
+    };
+    
+    const onAdLoaded = () => {
+      if (isResolved) return;
+      console.log(`✅ 预加载广告加载成功 (${slotId})`);
+    };
+    
     const cleanupSlotListeners = () => {
       try {
         BaiduAd.removeListener('onRewardVerify', onRewardVerify);
         BaiduAd.removeListener('onAdClose', onAdClose);
         BaiduAd.removeListener('onAdShow', onAdShow);
+        BaiduAd.removeListener('onAdFailed', onAdFailed);
+        BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+        BaiduAd.removeListener('onAdLoaded', onAdLoaded);
       } catch (e) {
         console.warn(`清理预加载广告监听器失败 (${slotId}):`, e);
       }
@@ -1112,15 +1136,17 @@ export function useAdManager(config: AdConfig) {
     BaiduAd.addListener('onRewardVerify', onRewardVerify);
     BaiduAd.addListener('onAdClose', onAdClose);
     BaiduAd.addListener('onAdShow', onAdShow);
+    BaiduAd.addListener('onAdFailed', onAdFailed);
+    BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+    BaiduAd.addListener('onAdLoaded', onAdLoaded);
     
     try {
-      // 显示广告
       await BaiduAd.showRewardVideoAd();
       console.log(`✅ 预加载广告显示命令已发送 (${slotId})`);
     } catch (error) {
       console.error(`❌ 显示预加载广告失败 (${slotId}):`, error);
       cleanupSlotListeners();
-      resolveOnce(null);
+      reject(new Error('广告显示失败'));
     }
   };
 
