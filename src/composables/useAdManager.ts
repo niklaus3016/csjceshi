@@ -1085,12 +1085,14 @@ export function useAdManager(config: AdConfig) {
     };
     
     const onAdClose = () => {
-      console.log(`✅ 预加载广告关闭回调 (${slotId})`);
-      cleanupSlotListeners();
-      if (!currentAdSuccess) {
-        console.log(`预加载广告关闭但未获得奖励 (${slotId})，标记为失败`);
-        resolveOnce(null);
-      }
+      console.log(`⏳ 预加载广告关闭，等待奖励回调... (${slotId})`);
+      setTimeout(() => {
+        cleanupSlotListeners();
+        if (!currentAdSuccess) {
+          console.log(`❌ 预加载广告关闭后未获得奖励 (${slotId})，标记为失败`);
+          resolveOnce(null);
+        }
+      }, 1500);
     };
     
     const cleanupSlotListeners = () => {
@@ -1204,7 +1206,13 @@ export function useAdManager(config: AdConfig) {
       
       const onAdClose = () => {
         if (isResolved) return;
-        resolveOnce(null);
+        console.log(`⏳ 广告关闭，等待奖励回调...`);
+        setTimeout(() => {
+          if (!isResolved) {
+            console.log(`❌ 广告关闭后未收到奖励回调，标记为失败`);
+            resolveOnce(null);
+          }
+        }, 1500);
       };
       
       const onAdLoaded = (data: any) => {
