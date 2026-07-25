@@ -1421,7 +1421,15 @@ export function useAdManager(config: AdConfig) {
       BaiduAd.addListener('onAdLoaded', onAdLoaded);
       BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
       
-      BaiduAd.loadRewardVideoAd({ adId: slotId });
+      BaiduAd.loadRewardVideoAd({ 
+        adId: slotId,
+        userId: 'user_' + Date.now(),
+        extraData: JSON.stringify({ 
+          timestamp: Date.now(),
+          slotId: slotId,
+          appId: config.appId
+        })
+      });
       
       setTimeout(() => {
         if (!isResolved) {

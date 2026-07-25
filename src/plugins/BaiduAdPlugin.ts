@@ -1,7 +1,7 @@
 import { registerPlugin, PluginListenerHandle } from '@capacitor/core';
 
 export interface BaiduAdPlugin {
-  loadRewardVideoAd(options: { adId: string }): Promise<void>;
+  loadRewardVideoAd(options: { adId: string; userId?: string; extraData?: string }): Promise<void>;
   showRewardVideoAd(): Promise<void>;
   isReady(): Promise<{ ready: boolean }>;
   isSdkReady(): Promise<{ ready: boolean }>;
