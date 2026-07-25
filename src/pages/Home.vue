@@ -547,10 +547,10 @@ const adConfig = {
   ], // 按优先级从高到低排列
 };
 
-const { showRewardVideo, triggerPreloadAfterDelay } = useAdManager(adConfig);
+const { showRewardVideo, preloadNextAd } = useAdManager(adConfig);
 
-// 引用 triggerPreloadAfterDelay 防止被 Vite 删除
-if (triggerPreloadAfterDelay) {
+// 引用 preloadNextAd 防止被 Vite 删除
+if (preloadNextAd) {
   console.log('预加载函数已就绪');
 }
 
@@ -646,6 +646,13 @@ onMounted(async () => {
       console.warn('🔒 风控检测调用失败:', e);
     }
   }
+  
+  // 登录成功后，等待SDK初始化完成，触发广告预加载
+  console.log('🚀 登录成功，开始预加载广告...');
+  setTimeout(() => {
+    preloadNextAd().catch(console.error);
+  }, 2000);
+  
   // await loadPoolStatus(); // 加载奖金池状态（暂时隐藏，下下个版本上线）
 
   // 记录用户活动（进入首页）
