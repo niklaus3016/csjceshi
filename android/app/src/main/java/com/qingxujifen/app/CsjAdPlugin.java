@@ -101,16 +101,43 @@ public class CsjAdPlugin extends Plugin {
                         mLastAdRealEcpm = 0.0;
                         
                         try {
+                            Log.d(TAG, "=== 开始反射获取ECPM ===");
+                            
                             Object mediationManager = ad.getClass().getMethod("getMediationManager").invoke(ad);
+                            Log.d(TAG, "mediationManager 获取成功: " + (mediationManager != null ? mediationManager.getClass().getName() : "null"));
+                            
                             if (mediationManager != null) {
                                 Object loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                Log.d(TAG, "loadEcpmObj 获取成功: " + (loadEcpmObj != null ? loadEcpmObj.getClass().getName() : "null"));
+                                
                                 if (loadEcpmObj != null) {
-                                    mLastAdRealEcpm = (double) loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
-                                    Log.d(TAG, "加载成功反射获取ECPM：" + mLastAdRealEcpm);
+                                    Object ecpmObj = loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
+                                    Log.d(TAG, "ecpmObj 获取成功: " + ecpmObj + ", 类型: " + (ecpmObj != null ? ecpmObj.getClass().getName() : "null"));
+                                    
+                                    if (ecpmObj != null) {
+                                        if (ecpmObj instanceof Double) {
+                                            mLastAdRealEcpm = (Double) ecpmObj;
+                                        } else if (ecpmObj instanceof Integer) {
+                                            mLastAdRealEcpm = ((Integer) ecpmObj).doubleValue();
+                                        } else if (ecpmObj instanceof Long) {
+                                            mLastAdRealEcpm = ((Long) ecpmObj).doubleValue();
+                                        } else if (ecpmObj instanceof Float) {
+                                            mLastAdRealEcpm = ((Float) ecpmObj).doubleValue();
+                                        } else {
+                                            mLastAdRealEcpm = Double.parseDouble(ecpmObj.toString());
+                                        }
+                                    }
+                                    Log.d(TAG, "【保价广告加载成功】档位实际ECPM：" + mLastAdRealEcpm);
                                 }
                             }
+                        } catch (NoSuchMethodException e) {
+                            Log.e(TAG, "反射获取ECPM失败 - 方法不存在: " + e.getMessage());
+                            mLastAdRealEcpm = 0.0;
+                        } catch (IllegalAccessException e) {
+                            Log.e(TAG, "反射获取ECPM失败 - 访问权限: " + e.getMessage());
+                            mLastAdRealEcpm = 0.0;
                         } catch (Exception e) {
-                            Log.e(TAG, "loadSuccess 获取ECPM异常", e);
+                            Log.e(TAG, "反射获取ECPM失败 - 其他异常", e);
                             mLastAdRealEcpm = 0.0;
                         }
                         
@@ -129,16 +156,43 @@ public class CsjAdPlugin extends Plugin {
                         mLastAdRealEcpm = 0.0;
                         
                         try {
+                            Log.d(TAG, "=== 开始反射获取ECPM (缓存) ===");
+                            
                             Object mediationManager = ad.getClass().getMethod("getMediationManager").invoke(ad);
+                            Log.d(TAG, "mediationManager 获取成功: " + (mediationManager != null ? mediationManager.getClass().getName() : "null"));
+                            
                             if (mediationManager != null) {
                                 Object loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                Log.d(TAG, "loadEcpmObj 获取成功: " + (loadEcpmObj != null ? loadEcpmObj.getClass().getName() : "null"));
+                                
                                 if (loadEcpmObj != null) {
-                                    mLastAdRealEcpm = (double) loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
-                                    Log.d(TAG, "缓存成功反射获取ECPM：" + mLastAdRealEcpm);
+                                    Object ecpmObj = loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
+                                    Log.d(TAG, "ecpmObj 获取成功: " + ecpmObj + ", 类型: " + (ecpmObj != null ? ecpmObj.getClass().getName() : "null"));
+                                    
+                                    if (ecpmObj != null) {
+                                        if (ecpmObj instanceof Double) {
+                                            mLastAdRealEcpm = (Double) ecpmObj;
+                                        } else if (ecpmObj instanceof Integer) {
+                                            mLastAdRealEcpm = ((Integer) ecpmObj).doubleValue();
+                                        } else if (ecpmObj instanceof Long) {
+                                            mLastAdRealEcpm = ((Long) ecpmObj).doubleValue();
+                                        } else if (ecpmObj instanceof Float) {
+                                            mLastAdRealEcpm = ((Float) ecpmObj).doubleValue();
+                                        } else {
+                                            mLastAdRealEcpm = Double.parseDouble(ecpmObj.toString());
+                                        }
+                                    }
+                                    Log.d(TAG, "【保价广告缓存成功】档位实际ECPM：" + mLastAdRealEcpm);
                                 }
                             }
+                        } catch (NoSuchMethodException e) {
+                            Log.e(TAG, "反射获取ECPM失败(缓存) - 方法不存在: " + e.getMessage());
+                            mLastAdRealEcpm = 0.0;
+                        } catch (IllegalAccessException e) {
+                            Log.e(TAG, "反射获取ECPM失败(缓存) - 访问权限: " + e.getMessage());
+                            mLastAdRealEcpm = 0.0;
                         } catch (Exception e) {
-                            Log.e(TAG, "cache 获取ECPM异常", e);
+                            Log.e(TAG, "反射获取ECPM失败(缓存) - 其他异常", e);
                             mLastAdRealEcpm = 0.0;
                         }
                         
