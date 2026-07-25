@@ -1393,9 +1393,33 @@ export function useAdManager(config: AdConfig) {
         resolveOnce(null);
       };
       
+      const onAdLoaded = (data: any) => {
+        if (isResolved) return;
+        console.log(`✅ 广告位 ${slotId} 加载成功，准备显示`);
+        try {
+          BaiduAd.showRewardVideoAd();
+        } catch (e) {
+          console.error('❌ 显示广告失败:', e);
+          resolveOnce(null);
+        }
+      };
+      
+      const onVideoDownloadSuccess = (data: any) => {
+        if (isResolved) return;
+        console.log(`✅ 广告位 ${slotId} 缓存成功，准备显示`);
+        try {
+          BaiduAd.showRewardVideoAd();
+        } catch (e) {
+          console.error('❌ 显示广告失败:', e);
+          resolveOnce(null);
+        }
+      };
+      
       BaiduAd.addListener('onRewardVerify', onRewardVerify);
       BaiduAd.addListener('onAdFailed', onAdFailed);
       BaiduAd.addListener('onAdClose', onAdClose);
+      BaiduAd.addListener('onAdLoaded', onAdLoaded);
+      BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
       
       BaiduAd.loadRewardVideoAd({ adId: slotId });
       
