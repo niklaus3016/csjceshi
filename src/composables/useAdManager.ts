@@ -1081,10 +1081,12 @@ export function useAdManager(config: AdConfig) {
     let isResolved = false;
     let currentAdSuccess = false;
     let currentEcpm = lastEcpm; // 立即保存当前全局ECPM，防止被新预加载覆盖
+    let totalTimeoutId: any = null;
     
     const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
       if (!isResolved) {
         isResolved = true;
+        if (totalTimeoutId) clearTimeout(totalTimeoutId);
         cleanupSlotListeners();
         if (result) {
           resolve(result);
@@ -1096,6 +1098,14 @@ export function useAdManager(config: AdConfig) {
         }, 500);
       }
     };
+    
+    // 总超时保护：确保无论什么情况都能清理监听器
+    totalTimeoutId = setTimeout(() => {
+      if (!isResolved) {
+        console.log(`⏱️ 预加载广告总超时 (${slotId})，强制清理监听器`);
+        resolveOnce(null);
+      }
+    }, 30000);
     
     const onRewardVerify = (result: any) => {
       if (currentAdSuccess || isResolved) return;
@@ -1279,10 +1289,12 @@ export function useAdManager(config: AdConfig) {
   const trySingleAdSlot = async (slotId: string): Promise<{ ecpm: number; slotId: string } | null> => {
     return new Promise((resolve, reject) => {
       let isResolved = false;
+      let totalTimeoutId: any = null;
       
       const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
         if (!isResolved) {
           isResolved = true;
+          if (totalTimeoutId) clearTimeout(totalTimeoutId);
           cleanupListeners();
           resolve(result);
           setTimeout(() => {
@@ -1290,6 +1302,14 @@ export function useAdManager(config: AdConfig) {
           }, 500);
         }
       };
+      
+      // 总超时保护：确保无论什么情况都能清理监听器
+      totalTimeoutId = setTimeout(() => {
+        if (!isResolved) {
+          console.log(`⏱️ 正常加载广告总超时 (${slotId})，强制清理监听器`);
+          resolveOnce(null);
+        }
+      }, 30000);
       
       const onRewardVerify = (result: any) => {
         if (isResolved) return;
