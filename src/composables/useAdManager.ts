@@ -1146,7 +1146,7 @@ export function useAdManager(config: AdConfig) {
           console.log(`❌ 预加载广告关闭后未获得奖励 (${slotId})，标记为失败`);
           resolveOnce(null);
         }
-      }, 3000);
+      }, 1500);
     };
     
     const onAdFailed = (error: any) => {
