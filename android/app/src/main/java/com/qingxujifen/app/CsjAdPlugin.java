@@ -150,9 +150,44 @@ public class CsjAdPlugin extends Plugin {
                             debugInfo.put("mediationManager", mmClass);
                             
                             if (mediationManager != null) {
-                                Object loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                sendDebugLog("ECPM", "2. 遍历mediationManager的所有方法:");
+                                java.lang.reflect.Method[] methods = mediationManager.getClass().getMethods();
+                                for (java.lang.reflect.Method method : methods) {
+                                    String methodName = method.getName();
+                                    if (methodName.contains("ecpm") || methodName.contains("Ecpm") || 
+                                        methodName.contains("cpm") || methodName.contains("Cpm") ||
+                                        methodName.contains("price") || methodName.contains("Price") ||
+                                        methodName.contains("load") || methodName.contains("Load") ||
+                                        methodName.contains("show") || methodName.contains("Show")) {
+                                        sendDebugLog("ECPM", "   - " + methodName);
+                                    }
+                                }
+                                
+                                Object loadEcpmObj = null;
+                                try {
+                                    loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                } catch (NoSuchMethodException e) {
+                                    sendDebugLog("ECPM", "   getLoadEcpm() 不存在，尝试其他方法...");
+                                    try {
+                                        loadEcpmObj = mediationManager.getClass().getMethod("getEcpm").invoke(mediationManager);
+                                        sendDebugLog("ECPM", "   getEcpm() 调用成功");
+                                    } catch (NoSuchMethodException e2) {
+                                        try {
+                                            loadEcpmObj = mediationManager.getClass().getMethod("getAdEcpm").invoke(mediationManager);
+                                            sendDebugLog("ECPM", "   getAdEcpm() 调用成功");
+                                        } catch (NoSuchMethodException e3) {
+                                            try {
+                                                loadEcpmObj = mediationManager.getClass().getMethod("getShowEcpm").invoke(mediationManager);
+                                                sendDebugLog("ECPM", "   getShowEcpm() 调用成功");
+                                            } catch (NoSuchMethodException e4) {
+                                                sendDebugLog("ECPM_ERROR", "所有ECPM相关方法都不存在");
+                                            }
+                                        }
+                                    }
+                                }
+                                
                                 String leClass = loadEcpmObj != null ? loadEcpmObj.getClass().getName() : "null";
-                                sendDebugLog("ECPM", "2. loadEcpmObj 获取结果: " + leClass);
+                                sendDebugLog("ECPM", "3. ECPM对象获取结果: " + leClass);
                                 debugInfo.put("loadEcpmObj", leClass);
                                 
                                 if (loadEcpmObj != null) {
@@ -236,16 +271,51 @@ public class CsjAdPlugin extends Plugin {
                             debugInfo.put("mediationManager", mmClass);
                             
                             if (mediationManager != null) {
-                                Object loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                sendDebugLog("ECPM", "2. 遍历mediationManager的所有方法:");
+                                java.lang.reflect.Method[] methods = mediationManager.getClass().getMethods();
+                                for (java.lang.reflect.Method method : methods) {
+                                    String methodName = method.getName();
+                                    if (methodName.contains("ecpm") || methodName.contains("Ecpm") || 
+                                        methodName.contains("cpm") || methodName.contains("Cpm") ||
+                                        methodName.contains("price") || methodName.contains("Price") ||
+                                        methodName.contains("load") || methodName.contains("Load") ||
+                                        methodName.contains("show") || methodName.contains("Show")) {
+                                        sendDebugLog("ECPM", "   - " + methodName);
+                                    }
+                                }
+                                
+                                Object loadEcpmObj = null;
+                                try {
+                                    loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
+                                } catch (NoSuchMethodException e) {
+                                    sendDebugLog("ECPM", "   getLoadEcpm() 不存在，尝试其他方法...");
+                                    try {
+                                        loadEcpmObj = mediationManager.getClass().getMethod("getEcpm").invoke(mediationManager);
+                                        sendDebugLog("ECPM", "   getEcpm() 调用成功");
+                                    } catch (NoSuchMethodException e2) {
+                                        try {
+                                            loadEcpmObj = mediationManager.getClass().getMethod("getAdEcpm").invoke(mediationManager);
+                                            sendDebugLog("ECPM", "   getAdEcpm() 调用成功");
+                                        } catch (NoSuchMethodException e3) {
+                                            try {
+                                                loadEcpmObj = mediationManager.getClass().getMethod("getShowEcpm").invoke(mediationManager);
+                                                sendDebugLog("ECPM", "   getShowEcpm() 调用成功");
+                                            } catch (NoSuchMethodException e4) {
+                                                sendDebugLog("ECPM_ERROR", "所有ECPM相关方法都不存在");
+                                            }
+                                        }
+                                    }
+                                }
+                                
                                 String leClass = loadEcpmObj != null ? loadEcpmObj.getClass().getName() : "null";
-                                sendDebugLog("ECPM", "2. loadEcpmObj 获取结果: " + leClass);
+                                sendDebugLog("ECPM", "3. ECPM对象获取结果: " + leClass);
                                 debugInfo.put("loadEcpmObj", leClass);
                                 
                                 if (loadEcpmObj != null) {
                                     Object ecpmObj = loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
                                     String ecpmStr = ecpmObj != null ? ecpmObj.toString() : "null";
                                     String ecpmType = ecpmObj != null ? ecpmObj.getClass().getName() : "null";
-                                    sendDebugLog("ECPM", "3. ecpmObj 获取结果: " + ecpmStr + ", 类型: " + ecpmType);
+                                    sendDebugLog("ECPM", "4. ecpmObj 获取结果: " + ecpmStr + ", 类型: " + ecpmType);
                                     debugInfo.put("ecpmObj", ecpmStr);
                                     debugInfo.put("ecpmType", ecpmType);
                                     
