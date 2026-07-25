@@ -543,7 +543,7 @@ const loadWithdrawStatus = async () => {
 const adConfig = {
   appId: '5858423',
   slotIds: [
-    '104282400'   // 保价1500（测试：仅保留此广告位）
+    '104284953'   // 保价40（测试：仅保留此广告位）
   ], // 按优先级从高到低排列
 };
 

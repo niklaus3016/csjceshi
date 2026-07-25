@@ -49,9 +49,9 @@ export function useAdManager(config: AdConfig) {
   let isPreloading = false; // 是否正在预加载
   let preloadingPromise: Promise<void> | null = null; // 预加载Promise，用于等待预加载完成
   
-  // 广告位分组配置（穿山甲）- 测试：仅保留104282400
+  // 广告位分组配置（穿山甲）- 测试：仅保留104284953
   const AD_GROUPS = {
-    A: ['104282400']    // 保价1500
+    A: ['104284953']    // 保价40
   };
 
   // 分组顺序（用于遍历）
@@ -283,11 +283,10 @@ export function useAdManager(config: AdConfig) {
 
   const generateSimulatedEcpm = (slotId: string): number => {
     const ecpmRanges: { [key: string]: [number, number] } = {
-      '104282400': [1350, 1500],    // 保价1500
+      '104284953': [20, 40],    // 保价40
       '104284867': [900, 1000],     // 保价1000
       '104285137': [400, 500],      // 保价500
-      '104284866': [100, 150],      // 保价150
-      '104284953': [20, 40]         // 保价40
+      '104284866': [100, 150]       // 保价150
     };
 
     const range = ecpmRanges[slotId];
