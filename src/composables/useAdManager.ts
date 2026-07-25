@@ -1145,9 +1145,12 @@ export function useAdManager(config: AdConfig) {
     const onAdShow = (data: any) => {
       if (data && data.ecpm) {
         currentEcpm = data.ecpm;
-        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM=${currentEcpm}`);
+        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM=${currentEcpm}（来自onAdShow）`);
+      } else if (lastEcpm > 0) {
+        currentEcpm = lastEcpm;
+        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM=${currentEcpm}（来自全局缓存）`);
       } else {
-        console.log(`📺 预加载广告页面已打开 (${slotId})`);
+        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM暂未获取`);
       }
       setTimeout(() => {
         smartPreload();
