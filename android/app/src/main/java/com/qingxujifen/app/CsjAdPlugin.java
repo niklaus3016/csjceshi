@@ -217,6 +217,88 @@ public class CsjAdPlugin extends Plugin {
                                         }
                                     }
                                 }
+                                
+                                sendDebugLog("ECPM", "5. 尝试获取子代码位信息 getAdLoadInfo()");
+                                try {
+                                    Object adLoadInfoList = mediationManager.getClass().getMethod("getAdLoadInfo").invoke(mediationManager);
+                                    if (adLoadInfoList != null) {
+                                        String listClass = adLoadInfoList.getClass().getName();
+                                        sendDebugLog("ECPM", "   adLoadInfoList 获取成功: " + listClass);
+                                        debugInfo.put("adLoadInfoList", listClass);
+                                        
+                                        java.lang.reflect.Method sizeMethod = adLoadInfoList.getClass().getMethod("size");
+                                        int size = (int) sizeMethod.invoke(adLoadInfoList);
+                                        sendDebugLog("ECPM", "   adLoadInfoList 大小: " + size);
+                                        
+                                        if (size > 0) {
+                                            java.lang.reflect.Method getMethod = adLoadInfoList.getClass().getMethod("get", int.class);
+                                            Object firstItem = getMethod.invoke(adLoadInfoList, 0);
+                                            if (firstItem != null) {
+                                                String itemClass = firstItem.getClass().getName();
+                                                sendDebugLog("ECPM", "   第一个元素类型: " + itemClass);
+                                                
+                                                java.lang.reflect.Method[] itemMethods = firstItem.getClass().getMethods();
+                                                sendDebugLog("ECPM", "   第一个元素的方法列表:");
+                                                for (java.lang.reflect.Method itemMethod : itemMethods) {
+                                                    String methodName = itemMethod.getName();
+                                                    if (methodName.contains("code") || methodName.contains("Code") ||
+                                                        methodName.contains("id") || methodName.contains("Id") ||
+                                                        methodName.contains("ecpm") || methodName.contains("Ecpm") ||
+                                                        methodName.contains("adn") || methodName.contains("Adn") ||
+                                                        methodName.contains("price") || methodName.contains("Price")) {
+                                                        sendDebugLog("ECPM", "     - " + methodName);
+                                                    }
+                                                }
+                                                
+                                                try {
+                                                    Object subCodeId = firstItem.getClass().getMethod("getAdnSlotId").invoke(firstItem);
+                                                    sendDebugLog("ECPM", "   子代码位ID: " + subCodeId);
+                                                    debugInfo.put("subCodeId", subCodeId != null ? subCodeId.toString() : "null");
+                                                } catch (NoSuchMethodException e) {
+                                                    try {
+                                                        Object subCodeId = firstItem.getClass().getMethod("getSlotId").invoke(firstItem);
+                                                        sendDebugLog("ECPM", "   子代码位ID(getSlotId): " + subCodeId);
+                                                        debugInfo.put("subCodeId", subCodeId != null ? subCodeId.toString() : "null");
+                                                    } catch (NoSuchMethodException e2) {
+                                                        sendDebugLog("ECPM_ERROR", "   获取子代码位ID失败，方法不存在");
+                                                    }
+                                                }
+                                                
+                                                try {
+                                                    Object ecpmInfo = firstItem.getClass().getMethod("getMediationAdEcpmInfo").invoke(firstItem);
+                                                    if (ecpmInfo != null) {
+                                                        try {
+                                                            Object ecpmVal = ecpmInfo.getClass().getMethod("getEcpm").invoke(ecpmInfo);
+                                                            sendDebugLog("ECPM", "   通过AdLoadInfo获取ECPM: " + ecpmVal);
+                                                            if (ecpmVal != null) {
+                                                                if (ecpmVal instanceof Double) {
+                                                                    mLastAdRealEcpm = (Double) ecpmVal;
+                                                                } else if (ecpmVal instanceof Integer) {
+                                                                    mLastAdRealEcpm = ((Integer) ecpmVal).doubleValue();
+                                                                } else if (ecpmVal instanceof Long) {
+                                                                    mLastAdRealEcpm = ((Long) ecpmVal).doubleValue();
+                                                                } else {
+                                                                    mLastAdRealEcpm = Double.parseDouble(ecpmVal.toString());
+                                                                }
+                                                                sendDebugLog("ECPM", "   通过AdLoadInfo更新ECPM值: " + mLastAdRealEcpm);
+                                                            }
+                                                        } catch (Exception e) {
+                                                            sendDebugLog("ECPM_ERROR", "   获取Ecpm值失败: " + e.getMessage());
+                                                        }
+                                                    }
+                                                } catch (NoSuchMethodException e) {
+                                                    sendDebugLog("ECPM_ERROR", "   getMediationAdEcpmInfo方法不存在");
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        sendDebugLog("ECPM", "   adLoadInfoList 为null");
+                                    }
+                                } catch (NoSuchMethodException e) {
+                                    sendDebugLog("ECPM_ERROR", "   getAdLoadInfo方法不存在");
+                                } catch (Exception e) {
+                                    sendDebugLog("ECPM_ERROR", "   getAdLoadInfo调用失败: " + e.getMessage());
+                                }
                             }
                         } catch (NoSuchMethodException e) {
                             String errorMsg = "反射失败 - 方法不存在: " + e.getMessage();
@@ -332,6 +414,88 @@ public class CsjAdPlugin extends Plugin {
                                             mLastAdRealEcpm = Double.parseDouble(ecpmObj.toString());
                                         }
                                     }
+                                }
+                                
+                                sendDebugLog("ECPM", "5. 尝试获取子代码位信息 getAdLoadInfo()");
+                                try {
+                                    Object adLoadInfoList = mediationManager.getClass().getMethod("getAdLoadInfo").invoke(mediationManager);
+                                    if (adLoadInfoList != null) {
+                                        String listClass = adLoadInfoList.getClass().getName();
+                                        sendDebugLog("ECPM", "   adLoadInfoList 获取成功: " + listClass);
+                                        debugInfo.put("adLoadInfoList", listClass);
+                                        
+                                        java.lang.reflect.Method sizeMethod = adLoadInfoList.getClass().getMethod("size");
+                                        int size = (int) sizeMethod.invoke(adLoadInfoList);
+                                        sendDebugLog("ECPM", "   adLoadInfoList 大小: " + size);
+                                        
+                                        if (size > 0) {
+                                            java.lang.reflect.Method getMethod = adLoadInfoList.getClass().getMethod("get", int.class);
+                                            Object firstItem = getMethod.invoke(adLoadInfoList, 0);
+                                            if (firstItem != null) {
+                                                String itemClass = firstItem.getClass().getName();
+                                                sendDebugLog("ECPM", "   第一个元素类型: " + itemClass);
+                                                
+                                                java.lang.reflect.Method[] itemMethods = firstItem.getClass().getMethods();
+                                                sendDebugLog("ECPM", "   第一个元素的方法列表:");
+                                                for (java.lang.reflect.Method itemMethod : itemMethods) {
+                                                    String methodName = itemMethod.getName();
+                                                    if (methodName.contains("code") || methodName.contains("Code") ||
+                                                        methodName.contains("id") || methodName.contains("Id") ||
+                                                        methodName.contains("ecpm") || methodName.contains("Ecpm") ||
+                                                        methodName.contains("adn") || methodName.contains("Adn") ||
+                                                        methodName.contains("price") || methodName.contains("Price")) {
+                                                        sendDebugLog("ECPM", "     - " + methodName);
+                                                    }
+                                                }
+                                                
+                                                try {
+                                                    Object subCodeId = firstItem.getClass().getMethod("getAdnSlotId").invoke(firstItem);
+                                                    sendDebugLog("ECPM", "   子代码位ID: " + subCodeId);
+                                                    debugInfo.put("subCodeId", subCodeId != null ? subCodeId.toString() : "null");
+                                                } catch (NoSuchMethodException e) {
+                                                    try {
+                                                        Object subCodeId = firstItem.getClass().getMethod("getSlotId").invoke(firstItem);
+                                                        sendDebugLog("ECPM", "   子代码位ID(getSlotId): " + subCodeId);
+                                                        debugInfo.put("subCodeId", subCodeId != null ? subCodeId.toString() : "null");
+                                                    } catch (NoSuchMethodException e2) {
+                                                        sendDebugLog("ECPM_ERROR", "   获取子代码位ID失败，方法不存在");
+                                                    }
+                                                }
+                                                
+                                                try {
+                                                    Object ecpmInfo = firstItem.getClass().getMethod("getMediationAdEcpmInfo").invoke(firstItem);
+                                                    if (ecpmInfo != null) {
+                                                        try {
+                                                            Object ecpmVal = ecpmInfo.getClass().getMethod("getEcpm").invoke(ecpmInfo);
+                                                            sendDebugLog("ECPM", "   通过AdLoadInfo获取ECPM: " + ecpmVal);
+                                                            if (ecpmVal != null) {
+                                                                if (ecpmVal instanceof Double) {
+                                                                    mLastAdRealEcpm = (Double) ecpmVal;
+                                                                } else if (ecpmVal instanceof Integer) {
+                                                                    mLastAdRealEcpm = ((Integer) ecpmVal).doubleValue();
+                                                                } else if (ecpmVal instanceof Long) {
+                                                                    mLastAdRealEcpm = ((Long) ecpmVal).doubleValue();
+                                                                } else {
+                                                                    mLastAdRealEcpm = Double.parseDouble(ecpmVal.toString());
+                                                                }
+                                                                sendDebugLog("ECPM", "   通过AdLoadInfo更新ECPM值: " + mLastAdRealEcpm);
+                                                            }
+                                                        } catch (Exception e) {
+                                                            sendDebugLog("ECPM_ERROR", "   获取Ecpm值失败: " + e.getMessage());
+                                                        }
+                                                    }
+                                                } catch (NoSuchMethodException e) {
+                                                    sendDebugLog("ECPM_ERROR", "   getMediationAdEcpmInfo方法不存在");
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        sendDebugLog("ECPM", "   adLoadInfoList 为null");
+                                    }
+                                } catch (NoSuchMethodException e) {
+                                    sendDebugLog("ECPM_ERROR", "   getAdLoadInfo方法不存在");
+                                } catch (Exception e) {
+                                    sendDebugLog("ECPM_ERROR", "   getAdLoadInfo调用失败: " + e.getMessage());
                                 }
                             }
                         } catch (Exception e) {
