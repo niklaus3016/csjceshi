@@ -200,100 +200,6 @@ export function useAdManager(config: AdConfig) {
     }
     return deviceId;
   };
-  
-  // 从本地存储获取设备的激励池状态
-  const getEcpmPool = (deviceId: string): number => {
-    const key = `ecpm_pool_${deviceId}`;
-    const stored = localStorage.getItem(key);
-    return stored ? parseFloat(stored) : 0;
-  };
-  
-  // 保存设备的激励池状态到本地存储
-  const saveEcpmPool = (deviceId: string, pool: number): void => {
-    const key = `ecpm_pool_${deviceId}`;
-    localStorage.setItem(key, pool.toString());
-  };
-  
-  // 计算实际传输的eCPM值（核心算法）
-  const calculateActualEcpm = (simulatedEcpm: number): number => {
-    try {
-      // 参数校验
-      if (simulatedEcpm < 0) {
-        console.warn('⚠️ 模拟eCPM值为负数，设置为0');
-        simulatedEcpm = 0;
-      }
-      
-      const deviceId = getDeviceId();
-      const previousPool = getEcpmPool(deviceId);
-      
-      // 配置参数
-      const ECPM_THRESHOLD = 501;  // 分界线
-      const HIGH_VALUE_RATIO = 0.7;  // 高值传输比例（70%传输，30%留存）
-      const RELEASE_RATIO = 0.3;     // 激励池释放比例（30%）
-      const ROLL_OVER_RATIO = 0.7;   // 激励池滚存比例（70%）
-      
-      // 计算基础传输值和留存额度
-      let baseTransmitAmount: number;
-      let currentRetainAmount: number;
-      
-      if (simulatedEcpm > ECPM_THRESHOLD) {
-        // 高值eCPM (>501)：70%传输，30%留存
-        baseTransmitAmount = simulatedEcpm * HIGH_VALUE_RATIO;
-        currentRetainAmount = simulatedEcpm * (1 - HIGH_VALUE_RATIO);
-      } else {
-        // 低值eCPM (≤501)：100%传输，0留存
-        baseTransmitAmount = simulatedEcpm;
-        currentRetainAmount = 0;
-      }
-      
-      // 计算当期激励释放额
-      const currentReleaseAmount = previousPool * RELEASE_RATIO;
-      
-      // 计算实际传输值
-      const actualEcpm = baseTransmitAmount + currentReleaseAmount;
-      
-      // 更新激励池总额
-      let newPool = previousPool * ROLL_OVER_RATIO + currentRetainAmount;
-      
-      // 激励池下限控制
-      const MIN_POOL = 0;      // 最小激励池
-      newPool = Math.max(MIN_POOL, newPool);
-      
-      // 保存到本地存储
-      saveEcpmPool(deviceId, newPool);
-      
-      // 日志输出
-      console.log(`💰 eCPM算法计算:`);
-      console.log(`   模拟eCPM: ${simulatedEcpm}`);
-      console.log(`   类型: ${simulatedEcpm > ECPM_THRESHOLD ? '高值' : '低值'}`);
-      console.log(`   基础传输值: ${baseTransmitAmount.toFixed(2)}`);
-      console.log(`   当期留存额度: ${currentRetainAmount.toFixed(2)}`);
-      console.log(`   上一期激励池: ${previousPool.toFixed(2)}`);
-      console.log(`   当期激励释放额: ${currentReleaseAmount.toFixed(2)}`);
-      console.log(`   实际传输值: ${actualEcpm.toFixed(2)}`);
-      console.log(`   新激励池总额: ${newPool.toFixed(2)}`);
-      
-      return actualEcpm;
-    } catch (error) {
-      console.error('❌ eCPM算法计算失败:', error);
-      // 异常情况下返回原始模拟值
-      return simulatedEcpm;
-    }
-  };
-
-  const generateSimulatedEcpm = (slotId: string): number => {
-    const ecpmRanges: { [key: string]: [number, number] } = {
-      '104282400': [1350, 1500],    // 保价1500
-      '104284867': [900, 1000],      // 保价1000
-      '104285137': [400, 500],       // 保价500
-      '104284866': [100, 150],       // 保价150
-      '104284953': [20, 40]          // 保价40
-    };
-
-    const range = ecpmRanges[slotId];
-    if (!range) return 0;
-    return Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
-  };
 
   const isBiddingSlot = (slotId: string): boolean => {
     const biddingSlots: string[] = [];
@@ -325,39 +231,12 @@ export function useAdManager(config: AdConfig) {
         const onRewardVerify = (result: any) => {
           if (!checkSession() || currentAdSuccess || isResolved) return;
           
-          console.log(`========== 广告奖励回调 (${slotId}) ==========`);
-          console.log('结果:', result);
-          
-          // 详细日志：原生代码返回的 ecpm 值
-          const nativeEcpm = result?.ecpm;
-          console.log('📊 原生代码返回的 ECPM 值:', nativeEcpm);
-          console.log('📊 原生 ECPM 类型:', typeof nativeEcpm);
-          console.log('📊 原生 ECPM 是否为 null:', nativeEcpm === null);
-          console.log('📊 原生 ECPM 是否为 undefined:', nativeEcpm === undefined);
-          if (nativeEcpm !== null && nativeEcpm !== undefined) {
-            console.log('📊 原生 ECPM 是否为数字:', typeof nativeEcpm === 'number');
-            console.log('📊 原生 ECPM 是否为正数:', nativeEcpm > 0);
-            console.log('📊 原生 ECPM 转换为数字:', Number(nativeEcpm));
-          }
-          
-          // 详细日志：result 中的所有字段
-          if (result && typeof result === 'object') {
-            console.log('📋 result 对象的所有键:', Object.keys(result));
-            for (const key of Object.keys(result)) {
-              console.log(`   ${key}: ${result[key]} (${typeof result[key]})`);
-            }
-          }
-          
           currentAdSuccess = true;
           if (slotTimeoutId) clearTimeout(slotTimeoutId);
           
-          // 所有广告位都使用模拟 ECPM 值
-          console.log('使用模拟 ECPM 值');
-          const simulatedEcpm = generateSimulatedEcpm(slotId);
-          console.log('🎲 模拟 ECPM 值:', simulatedEcpm);
-          const ecpm = calculateActualEcpm(simulatedEcpm);
+          const ecpm = result.ecpm || 0;
           
-          console.log(`✅ 广告成功 (${slotId})，返回 ECPM:`, ecpm);
+          console.log(`✅ 广告成功 (${slotId})，ECPM:`, ecpm);
           
           resolveOnce({ ecpm, slotId });
         };
@@ -819,39 +698,12 @@ export function useAdManager(config: AdConfig) {
         const onRewardVerify = (result: any) => {
           if (!checkSession() || currentAdSuccess || isResolved) return;
           
-          console.log(`========== 广告奖励回调 (${slotId}) ==========`);
-          console.log('结果:', result);
-          
-          // 详细日志：原生代码返回的 ecpm 值
-          const nativeEcpm = result?.ecpm;
-          console.log('📊 原生代码返回的 ECPM 值:', nativeEcpm);
-          console.log('📊 原生 ECPM 类型:', typeof nativeEcpm);
-          console.log('📊 原生 ECPM 是否为 null:', nativeEcpm === null);
-          console.log('📊 原生 ECPM 是否为 undefined:', nativeEcpm === undefined);
-          if (nativeEcpm !== null && nativeEcpm !== undefined) {
-            console.log('📊 原生 ECPM 是否为数字:', typeof nativeEcpm === 'number');
-            console.log('📊 原生 ECPM 是否为正数:', nativeEcpm > 0);
-            console.log('📊 原生 ECPM 转换为数字:', Number(nativeEcpm));
-          }
-          
-          // 详细日志：result 中的所有字段
-          if (result && typeof result === 'object') {
-            console.log('📋 result 对象的所有键:', Object.keys(result));
-            for (const key of Object.keys(result)) {
-              console.log(`   ${key}: ${result[key]} (${typeof result[key]})`);
-            }
-          }
-          
           currentAdSuccess = true;
           if (slotTimeoutId) clearTimeout(slotTimeoutId);
           
-          // 所有广告位都使用模拟 ECPM 值
-          console.log('使用模拟 ECPM 值');
-          const simulatedEcpm = generateSimulatedEcpm(slotId);
-          console.log('🎲 模拟 ECPM 值:', simulatedEcpm);
-          const ecpm = calculateActualEcpm(simulatedEcpm);
+          const ecpm = result.ecpm || 0;
           
-          console.log(`✅ 广告成功 (${slotId})，返回 ECPM:`, ecpm);
+          console.log(`✅ 广告成功 (${slotId})，ECPM:`, ecpm);
           
           resolveOnce({ ecpm, slotId });
         };
@@ -1196,38 +1048,9 @@ export function useAdManager(config: AdConfig) {
     const onRewardVerify = (result: any) => {
       if (currentAdSuccess || isResolved) return;
       
-      console.log(`========== 预加载广告奖励回调 (${slotId}) ==========`);
-      console.log('结果:', result);
+      const ecpm = result.ecpm || 0;
       
-      // 详细日志：原生代码返回的 ecpm 值
-      const nativeEcpm = result?.ecpm;
-      console.log('📊 原生代码返回的 ECPM 值:', nativeEcpm);
-      console.log('📊 原生 ECPM 类型:', typeof nativeEcpm);
-      console.log('📊 原生 ECPM 是否为 null:', nativeEcpm === null);
-      console.log('📊 原生 ECPM 是否为 undefined:', nativeEcpm === undefined);
-      if (nativeEcpm !== null && nativeEcpm !== undefined) {
-        console.log('📊 原生 ECPM 是否为数字:', typeof nativeEcpm === 'number');
-        console.log('📊 原生 ECPM 是否为正数:', nativeEcpm > 0);
-        console.log('📊 原生 ECPM 转换为数字:', Number(nativeEcpm));
-      }
-      
-      // 详细日志：result 中的所有字段
-      if (result && typeof result === 'object') {
-        console.log('📋 result 对象的所有键:', Object.keys(result));
-        for (const key of Object.keys(result)) {
-          console.log(`   ${key}: ${result[key]} (${typeof result[key]})`);
-        }
-      }
-      
-      currentAdSuccess = true;
-      
-      // 所有广告位都使用模拟 ECPM 值
-      console.log('使用模拟 ECPM 值');
-      const simulatedEcpm = generateSimulatedEcpm(slotId);
-      console.log('🎲 模拟 ECPM 值:', simulatedEcpm);
-      const ecpm = calculateActualEcpm(simulatedEcpm);
-      
-      console.log(`✅ 预加载广告成功 (${slotId})，返回 ECPM:`, ecpm);
+      console.log(`✅ 预加载广告成功 (${slotId})，ECPM:`, ecpm);
       
       // 更新调度器状态（与 executeSmartWaterfall 逻辑一致）
       const state = loadSchedulerState();
@@ -1368,12 +1191,7 @@ export function useAdManager(config: AdConfig) {
       const onRewardVerify = (result: any) => {
         if (isResolved) return;
         
-        let ecpm = result.ecpm || 0;
-        if (ecpm === 0) {
-          console.log('📊 ECPM为0，使用模拟值');
-          const simulatedEcpm = generateSimulatedEcpm(slotId);
-          ecpm = calculateActualEcpm(simulatedEcpm);
-        }
+        const ecpm = result.ecpm || 0;
         
         resolveOnce({ ecpm, slotId });
       };
@@ -1505,18 +1323,8 @@ export function useAdManager(config: AdConfig) {
         currentAdSuccess = true;
         if (slotTimeoutId) clearTimeout(slotTimeoutId);
         
-        let ecpm = result.ecpm || 0;
+        const ecpm = result.ecpm || 0;
         const currentSlotId = config.slotIds[(currentSlotIndex - 1 + config.slotIds.length) % config.slotIds.length];
-
-        if (isBiddingSlot(currentSlotId)) {
-          console.log('竞价位广告，使用模拟 ECPM');
-          const simulatedEcpm = generateSimulatedEcpm(currentSlotId);
-          ecpm = calculateActualEcpm(simulatedEcpm);
-        } else if (ecpm === 0) {
-          console.log('保价位广告 ECPM 为 0，生成模拟 ECPM');
-          const simulatedEcpm = generateSimulatedEcpm(currentSlotId);
-          ecpm = calculateActualEcpm(simulatedEcpm);
-        }
         
         isAdLoading.value = false;
         isAdReady.value = false;
@@ -1776,17 +1584,7 @@ export function useAdManager(config: AdConfig) {
         },
         onAdReward: (reward: any) => {
           console.log('获得 H5 广告奖励:', reward);
-          let ecpm = reward?.ecpm || reward?.amount || 0;
-          
-          if (selectedSlotId === '19188427') {
-            console.log('H5 竞价位广告，使用模拟 ECPM');
-            const simulatedEcpm = generateSimulatedEcpm(selectedSlotId);
-            ecpm = calculateActualEcpm(simulatedEcpm);
-          } else if (ecpm === 0) {
-            console.log('H5 保价位广告 ECPM 为 0，生成模拟 ECPM');
-            const simulatedEcpm = generateSimulatedEcpm(selectedSlotId);
-            ecpm = calculateActualEcpm(simulatedEcpm);
-          }
+          const ecpm = reward?.ecpm || reward?.amount || 0;
           
           isAdReady.value = false;
           isProcessing = false;
