@@ -28,6 +28,7 @@ export function useAdManager(config: AdConfig) {
   let videoDownloadFailedListener: any = null;
   let adLoadedListener: any = null;
   let adCloseListener: any = null;
+  let csjDebugLogListener: any = null;
   let timeoutId: any = null;
   let retryTimeoutId: any = null;
   let currentResolve: any = null;
@@ -1048,7 +1049,8 @@ export function useAdManager(config: AdConfig) {
       { name: 'onVideoDownloadSuccess', handler: videoDownloadSuccessListener },
       { name: 'onVideoDownloadFailed', handler: videoDownloadFailedListener },
       { name: 'onAdLoaded', handler: adLoadedListener },
-      { name: 'onAdClose', handler: adCloseListener }
+      { name: 'onAdClose', handler: adCloseListener },
+      { name: 'onCsjDebugLog', handler: csjDebugLogListener }
     ];
     
     listeners.forEach(({ name, handler }) => {
@@ -1067,6 +1069,7 @@ export function useAdManager(config: AdConfig) {
     videoDownloadFailedListener = null;
     adLoadedListener = null;
     adCloseListener = null;
+    csjDebugLogListener = null;
     
     [timeoutId, retryTimeoutId, slotTimeoutId].forEach(id => {
       if (id) {
@@ -1104,6 +1107,38 @@ export function useAdManager(config: AdConfig) {
         
         isLoaded.value = true;
         preloadAd.value = true;
+        
+        csjDebugLogListener = (data: any) => {
+          if (!data) return;
+          const tag = data.tag || 'UNKNOWN';
+          const message = data.message || '';
+          const timestamp = data.timestamp || Date.now();
+          
+          const colors: { [key: string]: string } = {
+            LOAD: 'color: #3B82F6',
+            SUCCESS: 'color: #10B981',
+            ERROR: 'color: #EF4444',
+            ECPM: 'color: #8B5CF6',
+            ECPM_ERROR: 'color: #F59E0B',
+            AD: 'color: #06B6D4',
+            REWARD: 'color: #EC4899',
+            SHOW: 'color: #14B8A6',
+            DOWNLOAD: 'color: #F97316',
+            STATUS: 'color: #6B7280',
+            AUTH: 'color: #84CC16',
+            COUPON: 'color: #A855F7'
+          };
+          
+          const color = colors[tag] || 'color: #6B7280';
+          console.log(`%c[CSJ][${tag}] ${message}`, color);
+        };
+        
+        try {
+          BaiduAd.addListener('onCsjDebugLog', csjDebugLogListener);
+          console.log('🔍 CsjAd调试日志监听器已注册');
+        } catch (e) {
+          console.warn('注册CsjAd调试日志监听器失败:', e);
+        }
         
         setTimeout(() => {
           console.log('📱 原生环境开始预加载广告');
