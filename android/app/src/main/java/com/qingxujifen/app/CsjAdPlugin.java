@@ -100,13 +100,22 @@ public class CsjAdPlugin extends Plugin {
                 mTTAdNative = ttAdManager.createAdNative(activity.getApplicationContext());
                 sendDebugLog("LOAD", "创建TTAdNative成功");
                 
-                AdSlot adSlot = new AdSlot.Builder()
+                AdSlot.Builder adSlotBuilder = new AdSlot.Builder()
                         .setCodeId(adId)
                         .setAdLoadType(TTAdLoadType.LOAD)
                         .setRewardAmount(1)
                         .setRewardName("金币")
-                        .setOrientation(TTAdConstant.VERTICAL)
-                        .build();
+                        .setOrientation(TTAdConstant.VERTICAL);
+                
+                try {
+                    adSlotBuilder.getClass().getMethod("setExtraObject", String.class, boolean.class)
+                            .invoke(adSlotBuilder, "show_adn_load_error_detail", true);
+                    sendDebugLog("LOAD", "已设置 show_adn_load_error_detail 参数");
+                } catch (Exception e) {
+                    sendDebugLog("LOAD", "SDK版本不支持 setExtraObject，跳过该参数");
+                }
+                
+                AdSlot adSlot = adSlotBuilder.build();
                 
                 sendDebugLog("LOAD", "构建AdSlot成功，codeId=" + adId);
                 
