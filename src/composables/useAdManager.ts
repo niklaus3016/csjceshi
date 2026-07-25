@@ -1081,12 +1081,12 @@ export function useAdManager(config: AdConfig) {
     let isResolved = false;
     let currentAdSuccess = false;
     let currentEcpm = lastEcpm; // 立即保存当前全局ECPM，防止被新预加载覆盖
-    let totalTimeoutId: any = null;
+    let extremeTimeoutId: any = null;
     
     const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
       if (!isResolved) {
         isResolved = true;
-        if (totalTimeoutId) clearTimeout(totalTimeoutId);
+        if (extremeTimeoutId) clearTimeout(extremeTimeoutId);
         cleanupSlotListeners();
         if (result) {
           resolve(result);
@@ -1099,13 +1099,13 @@ export function useAdManager(config: AdConfig) {
       }
     };
     
-    // 总超时保护：确保无论什么情况都能清理监听器
-    totalTimeoutId = setTimeout(() => {
+    // 极端情况超时保护：广告一直不关闭时清理监听器（5分钟）
+    extremeTimeoutId = setTimeout(() => {
       if (!isResolved) {
-        console.log(`⏱️ 预加载广告总超时 (${slotId})，强制清理监听器`);
+        console.log(`⏱️ 预加载广告极端超时（5分钟），强制清理监听器 (${slotId})`);
         resolveOnce(null);
       }
-    }, 30000);
+    }, 5 * 60 * 1000);
     
     const onRewardVerify = (result: any) => {
       if (currentAdSuccess || isResolved) return;
@@ -1158,10 +1158,10 @@ export function useAdManager(config: AdConfig) {
       console.log(`⏳ 预加载广告关闭，等待奖励回调... (${slotId})`);
       setTimeout(() => {
         if (!currentAdSuccess && !isResolved) {
-          console.log(`❌ 预加载广告关闭后未获得奖励 (${slotId})，标记为失败`);
+          console.log(`❌ 预加载广告关闭后5秒未获得奖励 (${slotId})，标记为失败`);
           resolveOnce(null);
         }
-      }, 1500);
+      }, 5000);
     };
     
     const onAdFailed = (error: any) => {
@@ -1289,12 +1289,12 @@ export function useAdManager(config: AdConfig) {
   const trySingleAdSlot = async (slotId: string): Promise<{ ecpm: number; slotId: string } | null> => {
     return new Promise((resolve, reject) => {
       let isResolved = false;
-      let totalTimeoutId: any = null;
+      let extremeTimeoutId: any = null;
       
       const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
         if (!isResolved) {
           isResolved = true;
-          if (totalTimeoutId) clearTimeout(totalTimeoutId);
+          if (extremeTimeoutId) clearTimeout(extremeTimeoutId);
           cleanupListeners();
           resolve(result);
           setTimeout(() => {
@@ -1303,13 +1303,13 @@ export function useAdManager(config: AdConfig) {
         }
       };
       
-      // 总超时保护：确保无论什么情况都能清理监听器
-      totalTimeoutId = setTimeout(() => {
+      // 极端情况超时保护：广告一直不关闭时清理监听器（5分钟）
+      extremeTimeoutId = setTimeout(() => {
         if (!isResolved) {
-          console.log(`⏱️ 正常加载广告总超时 (${slotId})，强制清理监听器`);
+          console.log(`⏱️ 正常加载广告极端超时（5分钟），强制清理监听器 (${slotId})`);
           resolveOnce(null);
         }
-      }, 30000);
+      }, 5 * 60 * 1000);
       
       const onRewardVerify = (result: any) => {
         if (isResolved) return;
@@ -1330,10 +1330,10 @@ export function useAdManager(config: AdConfig) {
         console.log(`⏳ 广告关闭，等待奖励回调...`);
         setTimeout(() => {
           if (!isResolved) {
-            console.log(`❌ 广告关闭后未收到奖励回调，标记为失败`);
+            console.log(`❌ 广告关闭后5秒未收到奖励回调，标记为失败`);
             resolveOnce(null);
           }
-        }, 3000);
+        }, 5000);
       };
       
       const onAdLoaded = (data: any) => {
