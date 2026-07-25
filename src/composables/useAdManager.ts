@@ -51,15 +51,11 @@ export function useAdManager(config: AdConfig) {
   
   // 广告位分组配置（穿山甲）
   const AD_GROUPS = {
-    A: ['104282400'],    // 保价1500
-    B: ['104284867'],    // 保价1000
-    C: ['104285137'],    // 保价500
-    D: ['104284866'],    // 保价150
-    E: ['104284953']     // 保价40
+    A: ['104282400']    // 保价1500
   };
 
   // 分组顺序（用于遍历）
-  const GROUP_ORDER = ['A', 'B', 'C', 'D', 'E'];
+  const GROUP_ORDER = ['A'];
   
   // 本地存储键名
   const SCHEDULER_STATE_KEY = 'ad_scheduler_state';
