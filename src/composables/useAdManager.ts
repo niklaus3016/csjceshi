@@ -1091,12 +1091,11 @@ export function useAdManager(config: AdConfig) {
     const onAdClose = () => {
       console.log(`⏳ 预加载广告关闭，等待奖励回调... (${slotId})`);
       setTimeout(() => {
-        cleanupSlotListeners();
-        if (!currentAdSuccess) {
+        if (!currentAdSuccess && !isResolved) {
           console.log(`❌ 预加载广告关闭后未获得奖励 (${slotId})，标记为失败`);
           resolveOnce(null);
         }
-      }, 1500);
+      }, 3000);
     };
     
     const cleanupSlotListeners = () => {
@@ -1163,10 +1162,7 @@ export function useAdManager(config: AdConfig) {
           isProcessing = false;
           return;
         } catch (error) {
-          console.log(`❌ 预加载广告展示失败:`, error);
-          isProcessing = false;
-          reject(error);
-          return;
+          console.log(`❌ 预加载广告展示失败，回退到正常加载:`, error);
         }
       } else {
         console.log('📋 没有预加载广告，开始正常加载');
