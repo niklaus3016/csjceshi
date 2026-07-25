@@ -1405,9 +1405,20 @@ export function useAdManager(config: AdConfig) {
         }
       };
       
-      const onAdLoaded = () => {
+      const onAdLoaded = (data: any) => {
         if (!checkSession()) return;
         console.log('✅ 广告加载成功回调');
+        if (data && data.debug) {
+          console.log('🔍 ECPM反射调试信息:', data.debug);
+          console.log('   - mediationManager:', data.debug.mediationManager);
+          console.log('   - loadEcpmObj:', data.debug.loadEcpmObj);
+          console.log('   - ecpmObj:', data.debug.ecpmObj);
+          console.log('   - ecpmType:', data.debug.ecpmType);
+          console.log('   - ecpm:', data.debug.ecpm);
+          if (data.debug.error) {
+            console.error('   ❌ 反射错误:', data.debug.error);
+          }
+        }
       };
 
       const onRewardVerify = (result: any) => {

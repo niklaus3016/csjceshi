@@ -100,19 +100,30 @@ public class CsjAdPlugin extends Plugin {
                         mRewardVideoAd = ad;
                         mLastAdRealEcpm = 0.0;
                         
+                        JSObject debugInfo = new JSObject();
+                        debugInfo.put("step", "load");
+                        
                         try {
                             Log.d(TAG, "=== 开始反射获取ECPM ===");
                             
                             Object mediationManager = ad.getClass().getMethod("getMediationManager").invoke(ad);
-                            Log.d(TAG, "mediationManager 获取成功: " + (mediationManager != null ? mediationManager.getClass().getName() : "null"));
+                            String mmClass = mediationManager != null ? mediationManager.getClass().getName() : "null";
+                            Log.d(TAG, "mediationManager 获取成功: " + mmClass);
+                            debugInfo.put("mediationManager", mmClass);
                             
                             if (mediationManager != null) {
                                 Object loadEcpmObj = mediationManager.getClass().getMethod("getLoadEcpm").invoke(mediationManager);
-                                Log.d(TAG, "loadEcpmObj 获取成功: " + (loadEcpmObj != null ? loadEcpmObj.getClass().getName() : "null"));
+                                String leClass = loadEcpmObj != null ? loadEcpmObj.getClass().getName() : "null";
+                                Log.d(TAG, "loadEcpmObj 获取成功: " + leClass);
+                                debugInfo.put("loadEcpmObj", leClass);
                                 
                                 if (loadEcpmObj != null) {
                                     Object ecpmObj = loadEcpmObj.getClass().getMethod("getEcpm").invoke(loadEcpmObj);
-                                    Log.d(TAG, "ecpmObj 获取成功: " + ecpmObj + ", 类型: " + (ecpmObj != null ? ecpmObj.getClass().getName() : "null"));
+                                    String ecpmStr = ecpmObj != null ? ecpmObj.toString() : "null";
+                                    String ecpmType = ecpmObj != null ? ecpmObj.getClass().getName() : "null";
+                                    Log.d(TAG, "ecpmObj 获取成功: " + ecpmStr + ", 类型: " + ecpmType);
+                                    debugInfo.put("ecpmObj", ecpmStr);
+                                    debugInfo.put("ecpmType", ecpmType);
                                     
                                     if (ecpmObj != null) {
                                         if (ecpmObj instanceof Double) {
@@ -127,22 +138,30 @@ public class CsjAdPlugin extends Plugin {
                                             mLastAdRealEcpm = Double.parseDouble(ecpmObj.toString());
                                         }
                                     }
-                                    Log.d(TAG, "【保价广告加载成功】档位实际ECPM：" + mLastAdRealEcpm);
                                 }
                             }
                         } catch (NoSuchMethodException e) {
                             Log.e(TAG, "反射获取ECPM失败 - 方法不存在: " + e.getMessage());
+                            debugInfo.put("error", "NoSuchMethodException: " + e.getMessage());
                             mLastAdRealEcpm = 0.0;
                         } catch (IllegalAccessException e) {
                             Log.e(TAG, "反射获取ECPM失败 - 访问权限: " + e.getMessage());
+                            debugInfo.put("error", "IllegalAccessException: " + e.getMessage());
                             mLastAdRealEcpm = 0.0;
                         } catch (Exception e) {
                             Log.e(TAG, "反射获取ECPM失败 - 其他异常", e);
+                            debugInfo.put("error", "Exception: " + e.getClass().getName() + ": " + e.getMessage());
                             mLastAdRealEcpm = 0.0;
                         }
                         
+                        Log.d(TAG, "【保价广告加载成功】档位实际ECPM：" + mLastAdRealEcpm);
+                        debugInfo.put("ecpm", mLastAdRealEcpm);
+                        
                         setupAdListener(ad);
-                        notifyListeners("onAdLoaded", new JSObject());
+                        
+                        JSObject loadedResult = new JSObject();
+                        loadedResult.put("debug", debugInfo);
+                        notifyListeners("onAdLoaded", loadedResult);
                     }
                     
                     @Override
