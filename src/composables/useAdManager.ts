@@ -1112,9 +1112,9 @@ export function useAdManager(config: AdConfig) {
       
       currentAdSuccess = true;
       
-      const ecpm = result.ecpm || currentEcpm || 0;
+      const ecpm = result.ecpm || currentEcpm || lastEcpm || 0;
       
-      console.log(`✅ 预加载广告成功 (${slotId})，ECPM:`, ecpm);
+      console.log(`✅ 预加载广告成功 (${slotId})，ECPM:`, ecpm, '(result.ecpm:', result.ecpm, 'currentEcpm:', currentEcpm, 'lastEcpm:', lastEcpm, ')');
       
       const state = loadSchedulerState();
       checkAndCleanupExpiredState(state);
@@ -1252,11 +1252,16 @@ export function useAdManager(config: AdConfig) {
           isProcessing = false;
           return;
         } catch (error) {
-          console.log(`❌ 预加载广告展示失败（用户中途返回或其他原因），重置状态:`, error);
+          console.log(`❌ 预加载广告展示失败，回退到正常加载:`, error.message);
+          // 如果是用户中途返回，直接报错，不继续尝试
+          if (error.message === '用户中途返回') {
+            resetAdState();
+            isProcessing = false;
+            reject(error);
+            return;
+          }
+          // 其他失败情况，继续尝试正常加载
           resetAdState();
-          isProcessing = false;
-          reject(error);
-          return;
         }
       } else {
         console.log('📋 没有预加载广告，开始正常加载');
