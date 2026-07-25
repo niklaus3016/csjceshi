@@ -456,6 +456,7 @@ export function useAdManager(config: AdConfig) {
         
         // 获取用户信息
         const employeeId = localStorage.getItem('employeeId') || '';
+        const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
         let deviceId = localStorage.getItem('deviceId');
         if (!deviceId) {
           deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -465,7 +466,7 @@ export function useAdManager(config: AdConfig) {
         // 发起请求（传递用户信息，确保ECPM正确）
         BaiduAd.loadRewardVideoAd({ 
           adId: slotId,
-          userId: 'user_' + employeeId + '_' + Date.now(),
+          userId: userId,
           extraData: JSON.stringify({ 
             employeeId: employeeId,
             deviceId: deviceId,
@@ -565,6 +566,7 @@ export function useAdManager(config: AdConfig) {
       
       // 获取用户信息
       const employeeId = localStorage.getItem('employeeId') || '';
+      const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
         deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -574,7 +576,7 @@ export function useAdManager(config: AdConfig) {
       // 调用loadRewardVideoAd()加载广告（传递用户信息，确保ECPM正确）
       BaiduAd.loadRewardVideoAd({ 
         adId: slotId,
-        userId: 'user_' + employeeId + '_' + Date.now(),
+        userId: userId,
         extraData: JSON.stringify({ 
           employeeId: employeeId,
           deviceId: deviceId,
@@ -1089,6 +1091,9 @@ export function useAdManager(config: AdConfig) {
         } else {
           reject(new Error('广告显示失败'));
         }
+        setTimeout(() => {
+          smartPreload();
+        }, 500);
       }
     };
     
@@ -1130,13 +1135,10 @@ export function useAdManager(config: AdConfig) {
     const onAdShow = (data: any) => {
       if (data && data.ecpm) {
         currentEcpm = data.ecpm;
-        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM=${currentEcpm}，延迟1秒触发预加载`);
+        console.log(`📺 预加载广告页面已打开 (${slotId})，ECPM=${currentEcpm}`);
       } else {
-        console.log(`📺 预加载广告页面已打开 (${slotId})，延迟1秒触发预加载`);
+        console.log(`📺 预加载广告页面已打开 (${slotId})`);
       }
-      setTimeout(() => {
-        smartPreload();
-      }, 1000);
     };
     
     const onAdClose = () => {
@@ -1280,6 +1282,9 @@ export function useAdManager(config: AdConfig) {
           isResolved = true;
           cleanupListeners();
           resolve(result);
+          setTimeout(() => {
+            smartPreload();
+          }, 500);
         }
       };
       
@@ -1329,10 +1334,7 @@ export function useAdManager(config: AdConfig) {
           clearTimeout(slotTimeoutId);
           console.log('✅ 广告开始展示，清除加载超时定时器');
         }
-        console.log('📺 广告开始展示，延迟1秒触发预加载');
-        setTimeout(() => {
-          smartPreload();
-        }, 1000);
+        console.log('📺 广告开始展示');
       };
       
       const cleanupListeners = () => {
@@ -1356,6 +1358,7 @@ export function useAdManager(config: AdConfig) {
       BaiduAd.addListener('onAdShow', onAdShow);
       
       const employeeId = localStorage.getItem('employeeId') || '';
+      const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
         deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -1364,7 +1367,7 @@ export function useAdManager(config: AdConfig) {
       
       BaiduAd.loadRewardVideoAd({ 
         adId: slotId,
-        userId: 'user_' + employeeId + '_' + Date.now(),
+        userId: userId,
         extraData: JSON.stringify({ 
           employeeId: employeeId,
           deviceId: deviceId,
