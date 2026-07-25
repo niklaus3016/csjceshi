@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(CsjAdPlugin.class);
+        registerPlugin(TTSPlugin.class);
         super.onCreate(savedInstanceState);
     }
     

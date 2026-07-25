@@ -87,27 +87,45 @@ public class CsjAdPlugin extends Plugin {
                     adSlotBuilder.setUserID(userId);
                 }
                 
-                try {
-                    Class<?> mediationAdSlotClass = Class.forName("com.bytedance.sdk.openadsdk.mediation.MediationAdSlot");
-                    Object mediationAdSlot = mediationAdSlotClass.getDeclaredConstructor().newInstance();
-                    
-                    if (extraData != null && !extraData.isEmpty()) {
+                if (extraData != null && !extraData.isEmpty()) {
+                    try {
+                        java.lang.reflect.Method setExtraMethod = AdSlot.Builder.class.getMethod("setExtra", String.class);
+                        setExtraMethod.invoke(adSlotBuilder, extraData);
+                        sendDebugLog("LOAD", "已设置extra透传参数");
+                    } catch (NoSuchMethodException e1) {
                         try {
-                            Class<?> mediationConstantClass = Class.forName("com.bytedance.sdk.openadsdk.mediation.MediationConstant");
-                            Object keyGroMoreExtra = mediationConstantClass.getField("KEY_GroMore_EXTRA").get(null);
-                            java.lang.reflect.Method setExtraObjectMethod = mediationAdSlotClass.getMethod("setExtraObject", String.class, Object.class);
-                            setExtraObjectMethod.invoke(mediationAdSlot, keyGroMoreExtra, extraData);
-                            sendDebugLog("LOAD", "已设置GroMore服务端奖励透传参数");
-                        } catch (Exception e) {
-                            sendDebugLog("LOAD", "SDK版本不支持MediationConstant.KEY_GroMore_EXTRA，跳过");
+                            java.lang.reflect.Method setCustomDataMethod = AdSlot.Builder.class.getMethod("setCustomData", String.class);
+                            setCustomDataMethod.invoke(adSlotBuilder, extraData);
+                            sendDebugLog("LOAD", "已设置customData透传参数");
+                        } catch (NoSuchMethodException e2) {
+                            try {
+                                java.lang.reflect.Method setExtraObjectMethod = AdSlot.Builder.class.getMethod("setExtraObject", String.class, Object.class);
+                                setExtraObjectMethod.invoke(adSlotBuilder, "GroMore_EXTRA", extraData);
+                                sendDebugLog("LOAD", "已设置extraObject透传参数");
+                            } catch (NoSuchMethodException e3) {
+                                try {
+                                    Class<?> mediationAdSlotClass = Class.forName("com.bytedance.sdk.openadsdk.mediation.MediationAdSlot");
+                                    Object mediationAdSlot = mediationAdSlotClass.getDeclaredConstructor().newInstance();
+                                    
+                                    try {
+                                        Class<?> mediationConstantClass = Class.forName("com.bytedance.sdk.openadsdk.mediation.MediationConstant");
+                                        Object keyGroMoreExtra = mediationConstantClass.getField("KEY_GroMore_EXTRA").get(null);
+                                        java.lang.reflect.Method setExtraObjMethod = mediationAdSlotClass.getMethod("setExtraObject", String.class, Object.class);
+                                        setExtraObjMethod.invoke(mediationAdSlot, keyGroMoreExtra, extraData);
+                                        sendDebugLog("LOAD", "已设置GroMore服务端奖励透传参数");
+                                    } catch (Exception e4) {
+                                        sendDebugLog("LOAD", "SDK版本不支持MediationConstant.KEY_GroMore_EXTRA，跳过");
+                                    }
+                                    
+                                    java.lang.reflect.Method setMediationAdSlotMethod = AdSlot.Builder.class.getMethod("setMediationAdSlot", mediationAdSlotClass);
+                                    adSlotBuilder = (AdSlot.Builder) setMediationAdSlotMethod.invoke(adSlotBuilder, mediationAdSlot);
+                                    
+                                } catch (Exception e4) {
+                                    sendDebugLog("LOAD", "SDK版本不支持透传参数，所有方法均失败");
+                                }
+                            }
                         }
                     }
-                    
-                    java.lang.reflect.Method setMediationAdSlotMethod = AdSlot.Builder.class.getMethod("setMediationAdSlot", mediationAdSlotClass);
-                    adSlotBuilder = (AdSlot.Builder) setMediationAdSlotMethod.invoke(adSlotBuilder, mediationAdSlot);
-                    
-                } catch (Exception e) {
-                    sendDebugLog("LOAD", "SDK版本不支持MediationAdSlot，跳过该参数");
                 }
                 
                 AdSlot adSlot = adSlotBuilder.build();
