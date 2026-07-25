@@ -453,8 +453,26 @@ export function useAdManager(config: AdConfig) {
           }
         }, 2000);
         
-        // 发起请求
-        BaiduAd.loadRewardVideoAd({ adId: slotId }).catch((error) => {
+        // 获取用户信息
+        const employeeId = localStorage.getItem('employeeId') || '';
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+          deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('deviceId', deviceId);
+        }
+        
+        // 发起请求（传递用户信息，确保ECPM正确）
+        BaiduAd.loadRewardVideoAd({ 
+          adId: slotId,
+          userId: 'user_' + employeeId + '_' + Date.now(),
+          extraData: JSON.stringify({ 
+            employeeId: employeeId,
+            deviceId: deviceId,
+            timestamp: Date.now(),
+            slotId: slotId,
+            appId: config.appId
+          })
+        }).catch((error) => {
           if (!isSlotResolved && !resolved) {
             isSlotResolved = true;
             console.log(`❌ 并行预加载请求失败: ${slotId}`, error);
@@ -544,8 +562,26 @@ export function useAdManager(config: AdConfig) {
         }
       }, PARALLEL_TIMEOUT);
       
-      // 调用loadRewardVideoAd()加载广告
-      BaiduAd.loadRewardVideoAd({ adId: slotId }).catch((error) => {
+      // 获取用户信息
+      const employeeId = localStorage.getItem('employeeId') || '';
+      let deviceId = localStorage.getItem('deviceId');
+      if (!deviceId) {
+        deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('deviceId', deviceId);
+      }
+      
+      // 调用loadRewardVideoAd()加载广告（传递用户信息，确保ECPM正确）
+      BaiduAd.loadRewardVideoAd({ 
+        adId: slotId,
+        userId: 'user_' + employeeId + '_' + Date.now(),
+        extraData: JSON.stringify({ 
+          employeeId: employeeId,
+          deviceId: deviceId,
+          timestamp: Date.now(),
+          slotId: slotId,
+          appId: config.appId
+        })
+      }).catch((error) => {
         if (!isResolved) {
           isResolved = true;
           console.log(`❌ 串行预加载请求失败: ${slotId}`, error);
