@@ -1,5 +1,5 @@
-import { ref, onMounted, onUnmounted } from 'vue';
-import BaiduAd from '../plugins/BaiduAdPlugin';
+import { ref } from 'vue';
+import CsjAd from '../plugins/CsjAdPlugin';
 import { sendRedPacket, recordAdView, getPoolStatus, getUserTickets } from '../api/apiService';
 
 declare global {
@@ -32,7 +32,7 @@ export function useAdManager(config: AdConfig) {
   };
 
   const isNativeApp = (): boolean => {
-    return typeof window !== 'undefined' && (window.baidu || window._baidu) && typeof BaiduAd !== 'undefined' && BaiduAd && typeof BaiduAd.loadRewardVideoAd === 'function';
+    return typeof window !== 'undefined' && (window.baidu || window._baidu) && typeof CsjAd !== 'undefined' && CsjAd && typeof CsjAd.loadRewardVideoAd === 'function';
   };
 
   const initializeAdSdk = async () => {
@@ -43,7 +43,7 @@ export function useAdManager(config: AdConfig) {
         console.log('原生 Android 环境，使用穿山甲原生 SDK');
         
         try {
-          const sdkReady = await BaiduAd.isSdkReady();
+          const sdkReady = await CsjAd.isSdkReady();
           if (sdkReady.ready) {
             console.log('📱 穿山甲SDK已就绪');
             isAdSdkReady.value = true;
@@ -91,7 +91,7 @@ export function useAdManager(config: AdConfig) {
         };
         
         try {
-          BaiduAd.addListener('onCsjDebugLog', csjDebugLogListener);
+          CsjAd.addListener('onCsjDebugLog', csjDebugLogListener);
           console.log('🔍 CsjAd调试日志监听器已注册');
         } catch (e) {
           console.warn('注册CsjAd调试日志监听器失败:', e);
@@ -108,6 +108,35 @@ export function useAdManager(config: AdConfig) {
       isLoaded.value = true;
       isAdSdkReady.value = false;
       preloadAd.value = true;
+    }
+  };
+
+  const preloadRewardVideoAd = async (): Promise<void> => {
+    if (!isNativeApp()) {
+      console.log('非原生环境，跳过预缓存');
+      return;
+    }
+    
+    console.log('🚀 开始冷启动预缓存广告...');
+    
+    try {
+      const employeeId = localStorage.getItem('employeeId') || '';
+      const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
+      let deviceId = localStorage.getItem('deviceId');
+      if (!deviceId) {
+        deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('deviceId', deviceId);
+      }
+      
+      await CsjAd.preloadRewardVideoAd({
+        adIds: config.slotIds,
+        concurrent: 2,
+        interval: 2
+      });
+      
+      console.log('✅ 冷启动预缓存命令已发送');
+    } catch (error) {
+      console.error('❌ 冷启动预缓存失败:', error);
     }
   };
 
@@ -175,7 +204,7 @@ export function useAdManager(config: AdConfig) {
         if (isResolved) return;
         console.log(`✅ 广告位 ${slotId} 缓存成功，准备显示`);
         try {
-          BaiduAd.showRewardVideoAd();
+          CsjAd.showRewardVideoAd();
         } catch (e) {
           console.error('❌ 显示广告失败:', e);
           resolveOnce(null);
@@ -192,23 +221,23 @@ export function useAdManager(config: AdConfig) {
       
       const cleanupListeners = () => {
         try {
-          BaiduAd.removeListener('onRewardVerify', onRewardVerify);
-          BaiduAd.removeListener('onAdFailed', onAdFailed);
-          BaiduAd.removeListener('onAdClose', onAdClose);
-          BaiduAd.removeListener('onAdLoaded', onAdLoaded);
-          BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-          BaiduAd.removeListener('onAdShow', onAdShow);
+          CsjAd.removeListener('onRewardVerify', onRewardVerify);
+          CsjAd.removeListener('onAdFailed', onAdFailed);
+          CsjAd.removeListener('onAdClose', onAdClose);
+          CsjAd.removeListener('onAdLoaded', onAdLoaded);
+          CsjAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+          CsjAd.removeListener('onAdShow', onAdShow);
         } catch (e) {
           console.warn(`清理监听器失败 (${slotId}):`, e);
         }
       };
       
-      BaiduAd.addListener('onRewardVerify', onRewardVerify);
-      BaiduAd.addListener('onAdFailed', onAdFailed);
-      BaiduAd.addListener('onAdClose', onAdClose);
-      BaiduAd.addListener('onAdLoaded', onAdLoaded);
-      BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-      BaiduAd.addListener('onAdShow', onAdShow);
+      CsjAd.addListener('onRewardVerify', onRewardVerify);
+      CsjAd.addListener('onAdFailed', onAdFailed);
+      CsjAd.addListener('onAdClose', onAdClose);
+      CsjAd.addListener('onAdLoaded', onAdLoaded);
+      CsjAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
+      CsjAd.addListener('onAdShow', onAdShow);
       
       const employeeId = localStorage.getItem('employeeId') || '';
       const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
@@ -218,7 +247,7 @@ export function useAdManager(config: AdConfig) {
         localStorage.setItem('deviceId', deviceId);
       }
       
-      BaiduAd.loadRewardVideoAd({ 
+      CsjAd.loadRewardVideoAd({ 
         adId: slotId,
         userId: userId,
         extraData: JSON.stringify({ 
@@ -292,6 +321,7 @@ export function useAdManager(config: AdConfig) {
     lastError,
     preloadAd,
     showRewardVideo: showAd,
-    initializeAdSdk
+    initializeAdSdk,
+    preloadRewardVideoAd
   };
 }

@@ -547,7 +547,7 @@ const adConfig = {
   ], // 按优先级从高到低排列
 };
 
-const { showRewardVideo } = useAdManager(adConfig);
+const { showRewardVideo, preloadRewardVideoAd } = useAdManager(adConfig);
 
 // 初始化数据
 // 处理页面可见性变化
@@ -642,7 +642,8 @@ onMounted(async () => {
     }
   }
   
-  // 登录成功后，SDK自带预缓存机制会自动处理
+  // 登录成功后，触发冷启动预缓存
+preloadRewardVideoAd().catch(console.error);
   
   // await loadPoolStatus(); // 加载奖金池状态（暂时隐藏，下下个版本上线）
 

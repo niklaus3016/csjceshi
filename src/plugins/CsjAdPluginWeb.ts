@@ -1,7 +1,7 @@
 import { WebPlugin } from '@capacitor/core';
-import type { BaiduAdPlugin } from './BaiduAdPlugin';
+import type { CsjAdPlugin } from './CsjAdPlugin';
 
-export class BaiduAdPluginWeb extends WebPlugin {
+export class CsjAdPluginWeb extends WebPlugin {
   async loadRewardVideoAd(options: { adId: string }): Promise<void> {
     console.log('Web 环境不支持穿山甲原生广告，请使用 H5 SDK');
     return Promise.resolve();
@@ -9,6 +9,11 @@ export class BaiduAdPluginWeb extends WebPlugin {
 
   async showRewardVideoAd(): Promise<void> {
     console.log('Web 环境不支持穿山甲原生广告，请使用 H5 SDK');
+    return Promise.resolve();
+  }
+
+  async preloadRewardVideoAd(options: { adIds: string[]; concurrent?: number; interval?: number }): Promise<void> {
+    console.log('Web 环境不支持穿山甲原生广告预缓存');
     return Promise.resolve();
   }
 
