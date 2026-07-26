@@ -547,7 +547,7 @@ const adConfig = {
   ], // 按优先级从高到低排列
 };
 
-const { showRewardVideo, preloadRewardVideoAd, initializeAdSdk } = useAdManager(adConfig);
+const { showRewardVideo, preloadRewardVideoAd, initializeAdSdk, cleanupDebugLogListener } = useAdManager(adConfig);
 
 // 初始化数据
 // 处理页面可见性变化
@@ -692,6 +692,8 @@ onUnmounted(() => {
   }
   // 移除事件监听
   document.removeEventListener('visibilitychange', handleVisibilityChange);
+  // 清理广告调试日志监听器
+  cleanupDebugLogListener();
 });
 
 // 加载用户金币信息

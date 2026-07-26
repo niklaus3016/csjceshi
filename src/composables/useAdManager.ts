@@ -25,7 +25,6 @@ export function useAdManager(config: AdConfig) {
   let csjDebugLogHandle: PluginListenerHandle | null = null;
   let isProcessing = false;
   let lastEcpm = 0;
-  let slotTimeoutId: any = null;
 
   const delay = (ms: number): Promise<void> => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -53,7 +52,6 @@ export function useAdManager(config: AdConfig) {
     return JSON.stringify({
       employeeId: localStorage.getItem('employeeId') || '',
       deviceId: getDeviceId(),
-      timestamp: Date.now(),
       slotId: slotId,
       appId: config.appId
     });
@@ -245,10 +243,6 @@ export function useAdManager(config: AdConfig) {
       };
       
       const onAdShow = () => {
-        if (!isResolved) {
-          clearTimeout(slotTimeoutId);
-          console.log('✅ 广告开始展示，清除加载超时定时器');
-        }
         console.log('📺 广告开始展示');
       };
       
