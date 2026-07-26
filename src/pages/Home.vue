@@ -547,12 +547,7 @@ const adConfig = {
   ], // 按优先级从高到低排列
 };
 
-const { showRewardVideo, preloadNextAd } = useAdManager(adConfig);
-
-// 引用 preloadNextAd 防止被 Vite 删除
-if (preloadNextAd) {
-  console.log('预加载函数已就绪');
-}
+const { showRewardVideo } = useAdManager(adConfig);
 
 // 初始化数据
 // 处理页面可见性变化
@@ -647,11 +642,7 @@ onMounted(async () => {
     }
   }
   
-  // 登录成功后，等待SDK初始化完成，触发广告预加载
-  console.log('🚀 登录成功，开始预加载广告...');
-  setTimeout(() => {
-    preloadNextAd().catch(console.error);
-  }, 2000);
+  // 登录成功后，SDK自带预缓存机制会自动处理
   
   // await loadPoolStatus(); // 加载奖金池状态（暂时隐藏，下下个版本上线）
 
