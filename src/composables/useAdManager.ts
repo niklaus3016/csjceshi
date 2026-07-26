@@ -41,12 +41,16 @@ export function useAdManager(config: AdConfig) {
   let hasShownAd = false; // 是否已经显示过广告（用于防止用户跳过后继续尝试其他广告位）
   let lastEcpm = 0; // 全局ECPM缓存，用于预加载广告展示时获取ECPM
   
-  // 预加载状态管理
-  let preloadedAd: {
+  // 会话状态管理
+  interface AdSession {
+    id: string;
     slotId: string;
     isReady: boolean;
     loadedAt: number;
-  } | null = null;
+  }
+  
+  let currentSession: AdSession | null = null; // 当前正在使用的会话
+  let nextSession: AdSession | null = null; // 预加载好的下一个会话
   let isPreloading = false; // 是否正在预加载
   let preloadingPromise: Promise<void> | null = null; // 预加载Promise，用于等待预加载完成
   
@@ -374,9 +378,9 @@ export function useAdManager(config: AdConfig) {
   
   // 智能预加载触发函数（方案C：避免重复触发）
   const smartPreload = () => {
-    // 条件1：已有预加载广告，跳过
-    if (preloadedAd) {
-      console.log('📋 已有预加载广告，跳过预加载');
+    // 条件1：已有预加载广告（nextSession），跳过
+    if (nextSession) {
+      console.log('📋 已有预加载广告（nextSession），跳过预加载');
       return;
     }
     
@@ -602,9 +606,9 @@ export function useAdManager(config: AdConfig) {
       return preloadingPromise;
     }
     
-    // 如果已经有预加载的广告，直接返回
-    if (preloadedAd) {
-      console.log('📋 已有预加载广告，跳过预加载');
+    // 如果已经有预加载的广告（nextSession），直接返回
+    if (nextSession) {
+      console.log('📋 已有预加载广告（nextSession），跳过预加载');
       return;
     }
     
@@ -653,12 +657,13 @@ export function useAdManager(config: AdConfig) {
             const isReady = await preloadSingleSlot(slotId);
             
             if (isReady) {
-              preloadedAd = {
+              nextSession = {
+                id: 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                 slotId: slotId,
                 isReady: true,
                 loadedAt: Date.now()
               };
-              console.log(`🎉 预加载成功: ${slotId}`);
+              console.log(`🎉 预加载成功，创建 nextSession: ${slotId} (sessionId: ${nextSession.id})`);
               foundAd = true;
               break;
             }
@@ -925,6 +930,9 @@ export function useAdManager(config: AdConfig) {
     isAdReady.value = false;
     hasShownAd = false; // 重置广告显示标志
     currentSessionId++;
+    // 清理会话状态
+    currentSession = null;
+    nextSession = null;
     console.log(`🆕 新会话开始，会话ID: ${currentSessionId}`);
   };
 
@@ -1060,19 +1068,20 @@ export function useAdManager(config: AdConfig) {
     }
   };
   
-  // 显示预加载的广告
+  // 显示预加载的广告（使用 nextSession）
   const showPreloadedAd = async (resolve: (value: { ecpm: number; slotId: string }) => void, reject: (reason?: any) => void) => {
-    if (!preloadedAd || !preloadedAd.isReady) {
-      console.log('预加载广告未就绪，开始正常加载');
-      reject(new Error('预加载广告未就绪'));
+    if (!nextSession || !nextSession.isReady) {
+      console.log('nextSession 未就绪，开始正常加载');
+      reject(new Error('nextSession 未就绪'));
       return;
     }
     
-    const slotId = preloadedAd.slotId;
-    console.log(`🚀 使用预加载的广告位: ${slotId}`);
+    // 将 nextSession 切换为 currentSession
+    currentSession = nextSession;
+    nextSession = null;
     
-    // 清除预加载状态（必须在这里清除，防止重复使用）
-    preloadedAd = null;
+    const slotId = currentSession.slotId;
+    console.log(`🚀 使用 nextSession，切换为 currentSession: ${slotId} (sessionId: ${currentSession.id})`);
     
     // 设置广告显示标志
     hasShownAd = true;
@@ -1242,20 +1251,20 @@ export function useAdManager(config: AdConfig) {
       console.log('所有广告位:', config.slotIds);
       console.log('是否原生环境:', isNativeApp());
       
-      // 先检查是否有预加载的广告（不要先调用resetAdState，否则会清除预加载状态）
-      console.log(`🔍 预加载广告检查: preloadedAd=${JSON.stringify(preloadedAd)}`);
-      if (preloadedAd && preloadedAd.isReady) {
-        console.log(`✅ 发现预加载广告，直接展示: ${preloadedAd.slotId}`);
+      // 先检查是否有预加载的广告（nextSession）
+      console.log(`🔍 nextSession 检查: nextSession=${JSON.stringify(nextSession)}`);
+      if (nextSession && nextSession.isReady) {
+        console.log(`✅ 发现 nextSession，直接展示: ${nextSession.slotId} (sessionId: ${nextSession.id})`);
         
         try {
           await showPreloadedAd(resolve, reject);
           isProcessing = false;
           return;
         } catch (error) {
-          console.log(`❌ 预加载广告展示失败，回退到正常加载:`, error);
+          console.log(`❌ nextSession 展示失败，回退到正常加载:`, error);
         }
       } else {
-        console.log('📋 没有预加载广告，开始正常加载');
+        console.log('📋 没有 nextSession，开始正常加载');
       }
       
       // 只有在需要重新加载时才重置状态
