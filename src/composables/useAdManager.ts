@@ -1093,9 +1093,6 @@ export function useAdManager(config: AdConfig) {
         } else {
           reject(new Error('广告显示失败'));
         }
-        setTimeout(() => {
-          smartPreload();
-        }, 500);
       }
     };
     
@@ -1161,13 +1158,10 @@ export function useAdManager(config: AdConfig) {
       console.log(`⏳ 预加载广告关闭，等待奖励回调... (${slotId})`);
       setTimeout(() => {
         if (!currentAdSuccess && !isResolved) {
-          console.log(`❌ 预加载广告关闭后5秒未获得奖励 (${slotId})，用户中途返回`);
-          isResolved = true;
-          if (extremeTimeoutId) clearTimeout(extremeTimeoutId);
-          cleanupSlotListeners();
-          reject(new Error('用户中途返回'));
+          console.log(`❌ 预加载广告关闭后未获得奖励 (${slotId})，标记为失败`);
+          resolveOnce(null);
         }
-      }, 5000);
+      }, 1500);
     };
     
     const onAdFailed = (error: any) => {
@@ -1255,21 +1249,14 @@ export function useAdManager(config: AdConfig) {
           isProcessing = false;
           return;
         } catch (error) {
-          console.log(`❌ 预加载广告展示失败，回退到正常加载:`, error.message);
-          // 如果是用户中途返回，直接报错，不继续尝试
-          if (error.message === '用户中途返回') {
-            resetAdState();
-            isProcessing = false;
-            reject(error);
-            return;
-          }
-          // 其他失败情况，继续尝试正常加载
-          resetAdState();
+          console.log(`❌ 预加载广告展示失败，回退到正常加载:`, error);
         }
       } else {
         console.log('📋 没有预加载广告，开始正常加载');
-        resetAdState();
       }
+      
+      // 只有在需要重新加载时才重置状态
+      resetAdState();
       
       for (let i = 0; i < config.slotIds.length; i++) {
         const slotId = config.slotIds[i];
