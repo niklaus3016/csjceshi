@@ -1742,10 +1742,10 @@ const submitWithdraw = async () => {
             ]"
           >
             <div :class="{ 'animate-spin': isWatching }" class="mb-5">
-              <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-700' : deviceStatus.isLimited ? 'text-red-400' : 'text-emerald-400'" />
+              <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-700' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'" />
             </div>
             <div class="text-center">
-              <span class="block text-base font-black uppercase tracking-widest leading-none">
+              <span class="block text-base font-black uppercase tracking-widest leading-none" :class="isWatching ? 'text-zinc-700' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'">
                 {{ isWatching ? '正在加载' : deviceStatus.isLimited ? '设备价值过低' : '点击赚取金币' }}
               </span>
             </div>
