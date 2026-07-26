@@ -18,6 +18,8 @@ export function useAdManager(config: AdConfig) {
   let csjDebugLogHandle: PluginListenerHandle | null = null;
   let isProcessing = false;
   let lastEcpm = 0;
+  let preloadedSlotId: string | null = null;
+  let preloadListenerHandles: PluginListenerHandle[] = [];
 
   const delay = (ms: number): Promise<void> => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -137,6 +139,17 @@ export function useAdManager(config: AdConfig) {
     }
   };
 
+  const cleanupPreloadListeners = () => {
+    for (const handle of preloadListenerHandles) {
+      try {
+        handle.remove();
+      } catch (e) {
+        console.warn('清理预缓存监听器失败:', e);
+      }
+    }
+    preloadListenerHandles.length = 0;
+  };
+
   const preloadRewardVideoAd = async (): Promise<void> => {
     if (!isNativeApp()) {
       console.log('非原生环境，跳过预缓存');
@@ -145,21 +158,44 @@ export function useAdManager(config: AdConfig) {
     
     console.log('🚀 开始冷启动预缓存广告...');
     
+    cleanupPreloadListeners();
+    
+    const slotId = config.slotIds[0];
+    const userId = getUserId();
+    const extraData = getExtraData(slotId);
+    
+    const onAdLoaded = (data: any) => {
+      console.log(`✅ 预缓存 - 广告位 ${slotId} 加载成功`);
+      preloadedSlotId = slotId;
+      isAdReady.value = true;
+    };
+    
+    const onVideoDownloadSuccess = (data: any) => {
+      console.log(`✅ 预缓存 - 广告位 ${slotId} 缓存成功`);
+      preloadedSlotId = slotId;
+      isAdReady.value = true;
+    };
+    
+    const onAdFailed = (error: any) => {
+      console.log(`❌ 预缓存 - 广告位 ${slotId} 加载失败:`, error);
+      preloadedSlotId = null;
+      isAdReady.value = false;
+    };
+    
+    CsjAd.addListener('onAdLoaded', onAdLoaded).then(handle => preloadListenerHandles.push(handle)).catch(console.warn);
+    CsjAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess).then(handle => preloadListenerHandles.push(handle)).catch(console.warn);
+    CsjAd.addListener('onAdFailed', onAdFailed).then(handle => preloadListenerHandles.push(handle)).catch(console.warn);
+    
     try {
-      const userId = getUserId();
-      const extraData = getExtraData(config.slotIds[0]);
-      
-      await CsjAd.preloadRewardVideoAd({
-        adIds: config.slotIds,
+      await CsjAd.loadRewardVideoAd({
+        adId: slotId,
         userId: userId,
-        extraData: extraData,
-        concurrent: 2,
-        interval: 2
+        extraData: extraData
       });
-      
-      console.log('✅ 冷启动预缓存命令已发送');
+      console.log('✅ 预缓存 - 加载命令已发送');
     } catch (error) {
-      console.error('❌ 冷启动预缓存失败:', error);
+      console.error('❌ 预缓存 - 加载命令发送失败:', error);
+      cleanupPreloadListeners();
     }
   };
 
@@ -275,6 +311,89 @@ export function useAdManager(config: AdConfig) {
     });
   };
 
+  const showPreloadedAd = async (): Promise<{ ecpm: number; slotId: string } | null> => {
+    return new Promise((resolve, reject) => {
+      let isResolved = false;
+      let extremeTimeoutId: any = null;
+      const listenerHandles: PluginListenerHandle[] = [];
+      
+      const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
+        if (!isResolved) {
+          isResolved = true;
+          if (extremeTimeoutId) clearTimeout(extremeTimeoutId);
+          cleanupListeners();
+          resolve(result);
+        }
+      };
+      
+      const rejectWithError = (error: Error) => {
+        if (!isResolved) {
+          isResolved = true;
+          if (extremeTimeoutId) clearTimeout(extremeTimeoutId);
+          cleanupListeners();
+          reject(error);
+        }
+      };
+      
+      extremeTimeoutId = setTimeout(() => {
+        if (!isResolved) {
+          console.log(`⏱️ 预缓存广告极端超时（5分钟）`);
+          resolveOnce(null);
+        }
+      }, 5 * 60 * 1000);
+      
+      const onRewardVerify = (result: any) => {
+        if (isResolved) return;
+        
+        const ecpm = result.ecpm || lastEcpm || 0;
+        
+        resolveOnce({ ecpm, slotId: preloadedSlotId! });
+      };
+      
+      const onAdClose = () => {
+        if (isResolved) return;
+        console.log(`⏳ 预缓存广告关闭，等待奖励回调...`);
+        setTimeout(() => {
+          if (!isResolved) {
+            console.log(`❌ 预缓存广告关闭后5秒未收到奖励回调，用户中途返回`);
+            rejectWithError(new Error('用户中途返回'));
+          }
+        }, 5000);
+      };
+      
+      const onAdShow = () => {
+        console.log('📺 预缓存广告开始展示');
+      };
+      
+      const cleanupListeners = () => {
+        for (const handle of listenerHandles) {
+          try {
+            handle.remove();
+          } catch (e) {
+            console.warn(`清理预缓存广告监听器失败:`, e);
+          }
+        }
+        listenerHandles.length = 0;
+        preloadedSlotId = null;
+        isAdReady.value = false;
+        cleanupPreloadListeners();
+      };
+      
+      CsjAd.addListener('onRewardVerify', onRewardVerify).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      CsjAd.addListener('onAdClose', onAdClose).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      CsjAd.addListener('onAdShow', onAdShow).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      
+      try {
+        CsjAd.showRewardVideoAd();
+        console.log('✅ 开始展示预缓存广告');
+      } catch (error) {
+        console.error('❌ 显示预缓存广告失败:', error);
+        cleanupListeners();
+        resolveOnce(null);
+      }
+    });
+  };
+
   const showAd = async (): Promise<{ ecpm: number; slotId: string }> => {
     return new Promise(async (resolve, reject) => {
       if (isProcessing) {
@@ -288,6 +407,22 @@ export function useAdManager(config: AdConfig) {
       console.log('========== 开始加载激励视频广告 ==========');
       console.log('所有广告位:', config.slotIds);
       console.log('是否原生环境:', isNativeApp());
+      console.log('是否有预缓存广告:', !!preloadedSlotId);
+      
+      if (preloadedSlotId && isAdReady.value) {
+        console.log(`🎯 使用预缓存广告: ${preloadedSlotId}`);
+        try {
+          const result = await showPreloadedAd();
+          if (result) {
+            console.log(`✅ 预缓存广告成功，eCPM: ${result.ecpm}`);
+            isProcessing = false;
+            resolve(result);
+            return;
+          }
+        } catch (error) {
+          console.log(`❌ 预缓存广告失败:`, error);
+        }
+      }
       
       for (let i = 0; i < config.slotIds.length; i++) {
         const slotId = config.slotIds[i];
