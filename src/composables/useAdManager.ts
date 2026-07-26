@@ -1093,6 +1093,9 @@ export function useAdManager(config: AdConfig) {
         } else {
           reject(new Error('广告显示失败'));
         }
+        setTimeout(() => {
+          smartPreload();
+        }, 500);
       }
     };
     
