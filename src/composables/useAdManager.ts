@@ -1,13 +1,6 @@
 import { ref } from 'vue';
-import { type PluginListenerHandle } from '@capacitor/core';
+import { type PluginListenerHandle, Capacitor } from '@capacitor/core';
 import CsjAd from '../plugins/CsjAdPlugin';
-
-declare global {
-  interface Window {
-    baidu?: any;
-    _baidu?: any;
-  }
-}
 
 interface AdConfig {
   appId: string;
@@ -31,7 +24,7 @@ export function useAdManager(config: AdConfig) {
   };
 
   const isNativeApp = (): boolean => {
-    return typeof window !== 'undefined' && (window.baidu || window._baidu) && typeof CsjAd !== 'undefined' && CsjAd && typeof CsjAd.loadRewardVideoAd === 'function';
+    return Capacitor.isNativePlatform() && typeof CsjAd !== 'undefined' && CsjAd && typeof CsjAd.loadRewardVideoAd === 'function';
   };
 
   const getUserId = (): string => {
