@@ -1,8 +1,7 @@
 import { WebPlugin } from '@capacitor/core';
-import type { CsjAdPlugin } from './CsjAdPlugin';
 
 export class CsjAdPluginWeb extends WebPlugin {
-  async loadRewardVideoAd(options: { adId: string }): Promise<void> {
+  async loadRewardVideoAd(_options: { adId: string; userId?: string; extraData?: string }): Promise<void> {
     console.log('Web 环境不支持穿山甲原生广告，请使用 H5 SDK');
     return Promise.resolve();
   }
@@ -12,7 +11,7 @@ export class CsjAdPluginWeb extends WebPlugin {
     return Promise.resolve();
   }
 
-  async preloadRewardVideoAd(options: { adIds: string[]; concurrent?: number; interval?: number }): Promise<void> {
+  async preloadRewardVideoAd(_options: { adIds: string[]; userId?: string; extraData?: string; concurrent?: number; interval?: number }): Promise<void> {
     console.log('Web 环境不支持穿山甲原生广告预缓存');
     return Promise.resolve();
   }
@@ -25,12 +24,8 @@ export class CsjAdPluginWeb extends WebPlugin {
     return { ready: true };
   }
 
-  async addListener(eventName: string, listenerFunc: (data: any) => void): Promise<any> {
+  async addListener(_eventName: string, _listenerFunc: (data: any) => void): Promise<any> {
     console.log('Web 环境不支持穿山甲原生广告，请使用 H5 SDK');
-    return Promise.resolve();
-  }
-
-  async removeListener(eventName: string, listenerFunc: (data: any) => void): Promise<void> {
     return Promise.resolve();
   }
 }

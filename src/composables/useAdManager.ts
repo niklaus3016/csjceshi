@@ -1,6 +1,6 @@
 import { ref } from 'vue';
+import { type PluginListenerHandle } from '@capacitor/core';
 import CsjAd from '../plugins/CsjAdPlugin';
-import { sendRedPacket, recordAdView, getPoolStatus, getUserTickets } from '../api/apiService';
 
 declare global {
   interface Window {
@@ -22,7 +22,7 @@ const lastError = ref('');
 const preloadAd = ref(false);
 
 export function useAdManager(config: AdConfig) {
-  let csjDebugLogListener: any = null;
+  let csjDebugLogHandle: PluginListenerHandle | null = null;
   let isProcessing = false;
   let lastEcpm = 0;
   let slotTimeoutId: any = null;
@@ -33,6 +33,30 @@ export function useAdManager(config: AdConfig) {
 
   const isNativeApp = (): boolean => {
     return typeof window !== 'undefined' && (window.baidu || window._baidu) && typeof CsjAd !== 'undefined' && CsjAd && typeof CsjAd.loadRewardVideoAd === 'function';
+  };
+
+  const getUserId = (): string => {
+    const employeeId = localStorage.getItem('employeeId') || '';
+    return localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
+  };
+
+  const getDeviceId = (): string => {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+      deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+      localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+  };
+
+  const getExtraData = (slotId: string): string => {
+    return JSON.stringify({
+      employeeId: localStorage.getItem('employeeId') || '',
+      deviceId: getDeviceId(),
+      timestamp: Date.now(),
+      slotId: slotId,
+      appId: config.appId
+    });
   };
 
   const initializeAdSdk = async () => {
@@ -57,11 +81,10 @@ export function useAdManager(config: AdConfig) {
         isLoaded.value = true;
         preloadAd.value = true;
         
-        csjDebugLogListener = (data: any) => {
+        const csjDebugLogListener = (data: any) => {
           if (!data) return;
           const tag = data.tag || 'UNKNOWN';
           const message = data.message || '';
-          const timestamp = data.timestamp || Date.now();
           
           const colors: { [key: string]: string } = {
             LOAD: 'color: #3B82F6',
@@ -91,7 +114,7 @@ export function useAdManager(config: AdConfig) {
         };
         
         try {
-          CsjAd.addListener('onCsjDebugLog', csjDebugLogListener);
+          csjDebugLogHandle = await CsjAd.addListener('onCsjDebugLog', csjDebugLogListener);
           console.log('🔍 CsjAd调试日志监听器已注册');
         } catch (e) {
           console.warn('注册CsjAd调试日志监听器失败:', e);
@@ -111,6 +134,18 @@ export function useAdManager(config: AdConfig) {
     }
   };
 
+  const cleanupDebugLogListener = () => {
+    if (csjDebugLogHandle) {
+      try {
+        csjDebugLogHandle.remove();
+        console.log('🔍 CsjAd调试日志监听器已清理');
+        csjDebugLogHandle = null;
+      } catch (e) {
+        console.warn('清理调试日志监听器失败:', e);
+      }
+    }
+  };
+
   const preloadRewardVideoAd = async (): Promise<void> => {
     if (!isNativeApp()) {
       console.log('非原生环境，跳过预缓存');
@@ -120,16 +155,13 @@ export function useAdManager(config: AdConfig) {
     console.log('🚀 开始冷启动预缓存广告...');
     
     try {
-      const employeeId = localStorage.getItem('employeeId') || '';
-      const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
-      let deviceId = localStorage.getItem('deviceId');
-      if (!deviceId) {
-        deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('deviceId', deviceId);
-      }
+      const userId = getUserId();
+      const extraData = getExtraData(config.slotIds[0]);
       
       await CsjAd.preloadRewardVideoAd({
         adIds: config.slotIds,
+        userId: userId,
+        extraData: extraData,
         concurrent: 2,
         interval: 2
       });
@@ -144,6 +176,7 @@ export function useAdManager(config: AdConfig) {
     return new Promise((resolve, reject) => {
       let isResolved = false;
       let extremeTimeoutId: any = null;
+      const listenerHandles: PluginListenerHandle[] = [];
       
       const resolveOnce = (result: { ecpm: number; slotId: string } | null) => {
         if (!isResolved) {
@@ -220,43 +253,30 @@ export function useAdManager(config: AdConfig) {
       };
       
       const cleanupListeners = () => {
-        try {
-          CsjAd.removeListener('onRewardVerify', onRewardVerify);
-          CsjAd.removeListener('onAdFailed', onAdFailed);
-          CsjAd.removeListener('onAdClose', onAdClose);
-          CsjAd.removeListener('onAdLoaded', onAdLoaded);
-          CsjAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-          CsjAd.removeListener('onAdShow', onAdShow);
-        } catch (e) {
-          console.warn(`清理监听器失败 (${slotId}):`, e);
+        for (const handle of listenerHandles) {
+          try {
+            handle.remove();
+          } catch (e) {
+            console.warn(`清理监听器失败 (${slotId}):`, e);
+          }
         }
+        listenerHandles.length = 0;
       };
       
-      CsjAd.addListener('onRewardVerify', onRewardVerify);
-      CsjAd.addListener('onAdFailed', onAdFailed);
-      CsjAd.addListener('onAdClose', onAdClose);
-      CsjAd.addListener('onAdLoaded', onAdLoaded);
-      CsjAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-      CsjAd.addListener('onAdShow', onAdShow);
+      CsjAd.addListener('onRewardVerify', onRewardVerify).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      CsjAd.addListener('onAdFailed', onAdFailed).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      CsjAd.addListener('onAdClose', onAdClose).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      CsjAd.addListener('onAdLoaded', onAdLoaded).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      CsjAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess).then(handle => listenerHandles.push(handle)).catch(console.warn);
+      CsjAd.addListener('onAdShow', onAdShow).then(handle => listenerHandles.push(handle)).catch(console.warn);
       
-      const employeeId = localStorage.getItem('employeeId') || '';
-      const userId = localStorage.getItem('userId') || ('user_' + employeeId + '_' + Date.now());
-      let deviceId = localStorage.getItem('deviceId');
-      if (!deviceId) {
-        deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('deviceId', deviceId);
-      }
+      const userId = getUserId();
+      const extraData = getExtraData(slotId);
       
       CsjAd.loadRewardVideoAd({ 
         adId: slotId,
         userId: userId,
-        extraData: JSON.stringify({ 
-          employeeId: employeeId,
-          deviceId: deviceId,
-          timestamp: Date.now(),
-          slotId: slotId,
-          appId: config.appId
-        })
+        extraData: extraData
       }).catch((error: any) => {
         if (!isResolved) {
           isResolved = true;
@@ -322,6 +342,7 @@ export function useAdManager(config: AdConfig) {
     preloadAd,
     showRewardVideo: showAd,
     initializeAdSdk,
-    preloadRewardVideoAd
+    preloadRewardVideoAd,
+    cleanupDebugLogListener
   };
 }
