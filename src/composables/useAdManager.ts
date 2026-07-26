@@ -1170,10 +1170,10 @@ export function useAdManager(config: AdConfig) {
       console.log(`⏳ 预加载广告关闭，等待奖励回调... (${slotId})`);
       setTimeout(() => {
         if (!currentAdSuccess && !isResolved) {
-          console.log(`❌ 预加载广告关闭后未获得奖励 (${slotId})，标记为失败`);
+          console.log(`❌ 预加载广告关闭后5秒未获得奖励 (${slotId})，标记为失败`);
           resolveOnce(null);
         }
-      }, 1500);
+      }, 5000);
     };
     
     const onAdFailed = (error: any) => {
@@ -1182,36 +1182,22 @@ export function useAdManager(config: AdConfig) {
       resolveOnce(null);
     };
     
-    const onVideoDownloadSuccess = () => {
-      if (isResolved) return;
-      console.log(`✅ 预加载广告缓存成功 (${slotId})`);
-    };
-    
-    const onAdLoaded = () => {
-      if (isResolved) return;
-      console.log(`✅ 预加载广告加载成功 (${slotId})`);
-    };
-    
     const cleanupSlotListeners = () => {
       try {
         BaiduAd.removeListener('onRewardVerify', onRewardVerify);
         BaiduAd.removeListener('onAdClose', onAdClose);
         BaiduAd.removeListener('onAdShow', onAdShow);
         BaiduAd.removeListener('onAdFailed', onAdFailed);
-        BaiduAd.removeListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-        BaiduAd.removeListener('onAdLoaded', onAdLoaded);
       } catch (e) {
         console.warn(`清理预加载广告监听器失败 (${slotId}):`, e);
       }
     };
     
-    // 注册监听器
+    // 注册监听器（只注册展示相关的，不注册预加载相关的）
     BaiduAd.addListener('onRewardVerify', onRewardVerify);
     BaiduAd.addListener('onAdClose', onAdClose);
     BaiduAd.addListener('onAdShow', onAdShow);
     BaiduAd.addListener('onAdFailed', onAdFailed);
-    BaiduAd.addListener('onVideoDownloadSuccess', onVideoDownloadSuccess);
-    BaiduAd.addListener('onAdLoaded', onAdLoaded);
     
     try {
       await BaiduAd.showRewardVideoAd();
