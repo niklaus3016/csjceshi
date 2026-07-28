@@ -57,7 +57,7 @@ const handleLogin = async (e: Event) => {
     } else {
       // 检查是否为设备数超限错误
       if (response.code === 'DEVICE_LIMIT_EXCEEDED') {
-        limitMessage.value = response.message || '今日设备数已达上限，请明天再来';
+        limitMessage.value = response.message || '超过当天可登录设备上限！';
         showLimitDialog.value = true;
       } else {
         // 登录失败，显示错误信息

@@ -238,11 +238,20 @@ export async function checkEmployee(employeeId: string, deviceId?: string, packa
 
     // 检查响应状态
     if (!response.ok) {
-      console.error('登录接口响应错误:', response.status, response.statusText);
-      return {
-        success: false,
-        message: `服务器响应错误: ${response.statusText}`,
-      };
+      // 尝试解析错误响应体
+      try {
+        const errorData = await response.json();
+        return {
+          success: false,
+          message: errorData.message || `服务器响应错误: ${response.statusText}`,
+          code: errorData.code,
+        };
+      } catch {
+        return {
+          success: false,
+          message: `服务器响应错误: ${response.statusText}`,
+        };
+      }
     }
 
     // 尝试解析响应体
