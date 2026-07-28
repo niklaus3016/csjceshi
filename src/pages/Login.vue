@@ -3,11 +3,15 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Lock, User } from 'lucide-vue-next';
 import { checkEmployee } from '../api/apiService';
+import { getDeviceId, getPackageName } from '../utils/device';
 
 const empId = ref('');
 const error = ref('');
 const isLoading = ref(false);
 const router = useRouter();
+
+const showLimitDialog = ref(false);
+const limitMessage = ref('');
 
 const handleLogin = async (e: Event) => {
   e.preventDefault();
@@ -21,10 +25,17 @@ const handleLogin = async (e: Event) => {
   // 显示加载状态
   isLoading.value = true;
   error.value = '';
+  showLimitDialog.value = false;
   
   try {
-    // 调用后端登录校验接口
-    const response = await checkEmployee(empId.value);
+    // 获取设备ID和包名
+    const deviceId = getDeviceId();
+    const packageName = getPackageName();
+    console.log('📱 登录设备ID:', deviceId);
+    console.log('📦 登录包名:', packageName);
+    
+    // 调用后端登录校验接口（传递deviceId和packageName用于校验）
+    const response = await checkEmployee(empId.value, deviceId, packageName);
     
     if (response.success && response.data) {
       // 登录成功，存储员工信息
@@ -44,8 +55,14 @@ const handleLogin = async (e: Event) => {
       // 跳转到首页
       router.push('/');
     } else {
-      // 登录失败，显示错误信息
-      error.value = response.message || '登录失败，请重试';
+      // 检查是否为设备数超限错误
+      if (response.code === 'DEVICE_LIMIT_EXCEEDED') {
+        limitMessage.value = response.message || '今日设备数已达上限，请明天再来';
+        showLimitDialog.value = true;
+      } else {
+        // 登录失败，显示错误信息
+        error.value = response.message || '登录失败，请重试';
+      }
     }
   } catch (err) {
     // 网络错误或其他异常
@@ -55,6 +72,11 @@ const handleLogin = async (e: Event) => {
     // 隐藏加载状态
     isLoading.value = false;
   }
+};
+
+const closeLimitDialog = () => {
+  showLimitDialog.value = false;
+  limitMessage.value = '';
 };
 
 const onInput = (e: Event) => {
@@ -121,6 +143,24 @@ const onInput = (e: Event) => {
         </form>
       </div>
 
+      <!-- 设备超限弹窗 -->
+      <div v-if="showLimitDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-6">
+        <div class="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 max-w-sm w-full">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-2xl">⚠️</span>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">设备数超限</h3>
+            <p class="text-zinc-400 text-sm mb-6">{{ limitMessage }}</p>
+            <button
+              @click="closeLimitDialog"
+              class="w-full py-3 rounded-xl bg-red-500 text-white font-semibold text-sm active:scale-[0.98] transition-all"
+            >
+              知道了
+            </button>
+          </div>
+        </div>
+      </div>
 
     </div>
   </div>
