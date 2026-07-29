@@ -8,7 +8,6 @@ import androidx.multidex.MultiDex;
 
 import com.bytedance.sdk.openadsdk.TTAdConfig;
 import com.bytedance.sdk.openadsdk.TTAdSdk;
-import com.bytedance.sdk.openadsdk.mediation.MediationConfig;
 
 import org.json.JSONObject;
 
@@ -47,12 +46,17 @@ public class MainApplication extends Application {
                 .useMediation(true);
         
         if (localConfig != null) {
-            configBuilder.setMediationConfig(
-                new MediationConfig.Builder()
-                    .setCustomLocalConfig(localConfig)
-                    .build()
-            );
-            Log.d(TAG, "已加载本地配置文件");
+            try {
+                Class<?> builderClass = Class.forName("com.bytedance.sdk.openadsdk.mediation.init.MediationConfig$Builder");
+                Object builder = builderClass.newInstance();
+                builderClass.getMethod("setCustomLocalConfig", JSONObject.class).invoke(builder, localConfig);
+                Object config = builderClass.getMethod("build").invoke(builder);
+                configBuilder.getClass().getMethod("setMediationConfig", Class.forName("com.bytedance.sdk.openadsdk.mediation.init.MediationConfig"))
+                        .invoke(configBuilder, config);
+                Log.d(TAG, "已加载本地配置文件");
+            } catch (Exception e) {
+                Log.w(TAG, "当前SDK版本不支持本地配置导入: " + e.getMessage());
+            }
         } else {
             Log.w(TAG, "未加载到本地配置文件");
         }
