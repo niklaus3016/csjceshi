@@ -8,6 +8,13 @@ import androidx.multidex.MultiDex;
 
 import com.bytedance.sdk.openadsdk.TTAdConfig;
 import com.bytedance.sdk.openadsdk.TTAdSdk;
+import com.bytedance.sdk.openadsdk.mediation.MediationConfig;
+
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class MainApplication extends Application {
 
@@ -29,14 +36,28 @@ public class MainApplication extends Application {
     private void initTTAdSdk() {
         Log.d(TAG, "初始化穿山甲SDK: appId=" + APP_ID);
         
-        TTAdSdk.init(this, new TTAdConfig.Builder()
+        JSONObject localConfig = loadLocalConfig();
+        
+        TTAdConfig.Builder configBuilder = new TTAdConfig.Builder()
                 .appId(APP_ID)
                 .appName("秘境星座")
                 .allowShowNotify(true)
                 .debug(false)
                 .supportMultiProcess(false)
-                .useMediation(true)
-                .build());
+                .useMediation(true);
+        
+        if (localConfig != null) {
+            configBuilder.setMediationConfig(
+                new MediationConfig.Builder()
+                    .setCustomLocalConfig(localConfig)
+                    .build()
+            );
+            Log.d(TAG, "已加载本地配置文件");
+        } else {
+            Log.w(TAG, "未加载到本地配置文件");
+        }
+        
+        TTAdSdk.init(this, configBuilder.build());
         
         TTAdSdk.start(new TTAdSdk.Callback() {
             @Override
@@ -49,5 +70,23 @@ public class MainApplication extends Application {
                 Log.e(TAG, "穿山甲SDK初始化失败: code=" + code + ", msg=" + msg);
             }
         });
+    }
+    
+    private JSONObject loadLocalConfig() {
+        try {
+            InputStream is = getAssets().open("site_config_5860455.json");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+            reader.close();
+            is.close();
+            return new JSONObject(sb.toString());
+        } catch (Exception e) {
+            Log.e(TAG, "加载本地配置失败: " + e.getMessage());
+            return null;
+        }
     }
 }
