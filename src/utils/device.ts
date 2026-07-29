@@ -8,5 +8,5 @@ export const getDeviceId = (): string => {
 };
 
 export const getPackageName = (): string => {
-  return 'com.qingxujifen.app';
+  return 'com.mijingxingzuo.app';
 };

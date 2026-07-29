@@ -1,4 +1,4 @@
-package com.qingxujifen.app;
+package com.mijingxingzuo.app;
 
 import android.app.Application;
 import android.content.Context;
@@ -12,7 +12,7 @@ import com.bytedance.sdk.openadsdk.TTAdSdk;
 public class MainApplication extends Application {
 
     private static final String TAG = "MainApplication";
-    private static final String APP_ID = "5858423";
+    private static final String APP_ID = "5860455";
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -31,7 +31,7 @@ public class MainApplication extends Application {
         
         TTAdSdk.init(this, new TTAdConfig.Builder()
                 .appId(APP_ID)
-                .appName("轻序计分")
+                .appName("秘境星座")
                 .allowShowNotify(true)
                 .debug(false)
                 .supportMultiProcess(false)
