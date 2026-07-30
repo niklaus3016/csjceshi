@@ -673,8 +673,8 @@ onMounted(async () => {
   
   // 初始化广告SDK并触发冷启动预缓存
     await initializeAdSdk();
-    console.log('⏳ 等待SDK初始化稳定 (2秒)...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('⏳ 等待SDK初始化稳定 (3秒)...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
     preloadRewardVideoAd().catch(console.error);
   
   // await loadPoolStatus(); // 加载奖金池状态（暂时隐藏，下下个版本上线）
