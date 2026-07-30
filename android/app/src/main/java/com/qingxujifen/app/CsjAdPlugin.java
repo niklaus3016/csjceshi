@@ -127,7 +127,15 @@ public class CsjAdPlugin extends Plugin {
                         }
                     }
                 }
-                
+
+                try {
+                    java.lang.reflect.Method setExtraObjectMethod = AdSlot.Builder.class.getMethod("setExtraObject", String.class, Object.class);
+                    setExtraObjectMethod.invoke(adSlotBuilder, "show_adn_load_error_detail", true);
+                    sendDebugLog("LOAD", "已开启ADN加载错误详情");
+                } catch (Exception e) {
+                    sendDebugLog("LOAD", "设置ADN错误详情失败: " + e.getMessage());
+                }
+
                 AdSlot adSlot = adSlotBuilder.build();
                 
                 mTTAdNative.loadRewardVideoAd(adSlot, new TTAdNative.RewardVideoAdListener() {

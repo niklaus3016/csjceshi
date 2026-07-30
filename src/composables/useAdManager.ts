@@ -177,7 +177,10 @@ export function useAdManager(config: AdConfig) {
     };
     
     const onAdFailed = (error: any) => {
-      console.log(`❌ 预缓存 - 广告位 ${slotId} 加载失败:`, error);
+      const code = error?.code || 'unknown';
+      const msg = error?.error || error?.message || '未知错误';
+      console.log(`❌ 预缓存 - 广告位 ${slotId} 加载失败 [code=${code}]: ${msg}`);
+      console.log('   完整错误详情:', error);
       preloadedSlotId = null;
       isAdReady.value = false;
     };
@@ -240,7 +243,10 @@ export function useAdManager(config: AdConfig) {
       
       const onAdFailed = (error: any) => {
         if (isResolved) return;
-        console.log(`❌ 广告位 ${slotId} 加载失败:`, error);
+        const code = error?.code || 'unknown';
+        const msg = error?.error || error?.message || '未知错误';
+        console.log(`❌ 广告位 ${slotId} 加载失败 [code=${code}]: ${msg}`);
+        console.log('   完整错误详情:', error);
         resolveOnce(null);
       };
       

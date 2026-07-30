@@ -48,37 +48,13 @@ const error = ref('');
 const isWatching = ref(false);
 const showAllRecords = ref(false);
 
-// 广告按钮冷却时间（30秒）
-const COOLDOWN_DURATION = 30;
-const cooldownTime = ref(0);
-let cooldownTimer: number | null = null;
-
-const startCooldown = () => {
-  if (cooldownTimer) {
-    clearInterval(cooldownTimer);
-    cooldownTimer = null;
-  }
-  cooldownTime.value = COOLDOWN_DURATION;
-  cooldownTimer = window.setInterval(() => {
-    if (cooldownTime.value > 0) {
-      cooldownTime.value--;
-    } else {
-      if (cooldownTimer) {
-        clearInterval(cooldownTimer);
-        cooldownTimer = null;
-      }
-    }
-  }, 1000);
-};
-
 const isButtonDisabled = computed(() => {
-  return isWatching.value || deviceStatus.value.isLimited || cooldownTime.value > 0;
+  return isWatching.value || deviceStatus.value.isLimited;
 });
 
 const buttonText = computed(() => {
   if (isWatching.value) return '正在加载';
   if (deviceStatus.value.isLimited) return '设备价值过低';
-  if (cooldownTime.value > 0) return `${cooldownTime.value}秒后可领`;
   return '点击赚取金币';
 });
 
@@ -671,11 +647,11 @@ onMounted(async () => {
     }
   }
   
-  // 初始化广告SDK并触发冷启动预缓存
+  // 初始化广告SDK并触发冷启动预缓存（临时注释，测试无预缓存效果）
     await initializeAdSdk();
-    console.log('⏳ 等待SDK初始化稳定 (3秒)...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    preloadRewardVideoAd().catch(console.error);
+    // console.log('⏳ 等待SDK初始化稳定 (3秒)...');
+    // await new Promise(resolve => setTimeout(resolve, 3000));
+    // preloadRewardVideoAd().catch(console.error);
   
   // await loadPoolStatus(); // 加载奖金池状态（暂时隐藏，下下个版本上线）
 
@@ -720,11 +696,6 @@ onUnmounted(() => {
   if (syncInterval) {
     clearInterval(syncInterval);
     syncInterval = null;
-  }
-  // 清理冷却定时器
-  if (cooldownTimer) {
-    clearInterval(cooldownTimer);
-    cooldownTimer = null;
   }
   // 移除事件监听
   document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -1114,9 +1085,6 @@ const loadGoldRecords = async () => {
 // 处理广告观看
 const handleWatchAd = async () => {
   if (isButtonDisabled.value || !empId.value || !userId.value) return;
-  
-  // 启动30秒冷却时间
-  startCooldown();
   
   // 检查设备状态
   await loadDeviceStatus();
@@ -1782,18 +1750,16 @@ const submitWithdraw = async () => {
               :class="[
                 isWatching 
                   ? 'bg-zinc-900/80 border-zinc-600 text-zinc-600 cursor-not-allowed' 
-                  : cooldownTime > 0
-                  ? 'bg-zinc-900/80 border-amber-600 text-amber-400/50 cursor-not-allowed' 
                   : deviceStatus.isLimited
                   ? 'bg-zinc-900/80 border-red-600 text-red-400 cursor-not-allowed' 
                   : 'bg-black border-amber-400 text-amber-400 shadow-[0_20px_50px_rgba(251,191,36,0.3)]'
               ]"
             >
               <div :class="{ 'animate-spin': isWatching }" class="mb-5">
-                <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-500' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'" />
+                <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-500' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'" />
               </div>
               <div class="text-center">
-                <span class="block text-base font-black uppercase tracking-widest leading-none" :class="isWatching ? 'text-zinc-500' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'">
+                <span class="block text-base font-black uppercase tracking-widest leading-none" :class="isWatching ? 'text-zinc-500' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'">
                   {{ buttonText }}
                 </span>
               </div>
@@ -1803,7 +1769,7 @@ const submitWithdraw = async () => {
 
 
         <p class="mt-4 text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-medium">
-          {{ isWatching ? '正在为您匹配优质广告资源' : cooldownTime > 0 ? `请等待 ${cooldownTime} 秒` : deviceStatus.isLimited ? '设备已被限制' : '广告激励已就绪' }}
+          {{ isWatching ? '正在为您匹配优质广告资源' : deviceStatus.isLimited ? '设备已被限制' : '广告激励已就绪' }}
         </p>
         
         <!-- 设备限制提示 -->
