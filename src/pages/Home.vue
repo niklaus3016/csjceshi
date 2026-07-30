@@ -1758,39 +1758,47 @@ const submitWithdraw = async () => {
         </div>
       </div> -->
         
-        <div class="relative">
-          <!-- 按钮背景光晕 -->
-          <div 
-            class="absolute inset-0 blur-3xl rounded-full transition-all duration-1000"
-            :class="[
-              isWatching ? 'bg-blue-500 opacity-60 scale-110' : 'bg-emerald-500 opacity-30 scale-100',
-              'animate-pulse'
-            ]"
-          />
+        <div class="relative flex items-center justify-center">
+          <!-- 左侧福字 -->
+          <span class="absolute -left-16 text-5xl font-black text-amber-400/80 select-none" style="text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);">福</span>
           
-          <button
-            @click="handleWatchAd"
-            :disabled="isButtonDisabled"
-            class="relative w-48 h-48 rounded-full flex flex-col items-center justify-center transition-all active:scale-90 border-2"
-            :class="[
-              isWatching 
-                ? 'bg-zinc-900/80 border-zinc-800 text-zinc-600 cursor-not-allowed' 
-                : cooldownTime > 0
-                ? 'bg-zinc-900/80 border-amber-800/50 text-amber-400/50 cursor-not-allowed' 
-                : deviceStatus.isLimited
-                ? 'bg-zinc-900/80 border-red-800/50 text-red-400 cursor-not-allowed' 
-                : 'bg-black border-white/10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:border-emerald-500/50'
-            ]"
-          >
-            <div :class="{ 'animate-spin': isWatching }" class="mb-5">
-              <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-700' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'" />
-            </div>
-            <div class="text-center">
-              <span class="block text-base font-black uppercase tracking-widest leading-none" :class="isWatching ? 'text-zinc-700' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'">
-                {{ buttonText }}
-              </span>
-            </div>
-          </button>
+          <!-- 右侧利字 -->
+          <span class="absolute -right-16 text-5xl font-black text-amber-400/80 select-none" style="text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);">利</span>
+          
+          <div class="relative">
+            <!-- 按钮背景光晕 -->
+            <div 
+              class="absolute inset-0 blur-3xl rounded-full transition-all duration-1000"
+              :class="[
+                isWatching ? 'bg-blue-500 opacity-60 scale-110' : 'bg-amber-400 opacity-30 scale-100',
+                'animate-pulse'
+              ]"
+            />
+            
+            <button
+              @click="handleWatchAd"
+              :disabled="isButtonDisabled"
+              class="relative w-48 h-48 rounded-full flex flex-col items-center justify-center transition-all active:scale-90 border-2"
+              :class="[
+                isWatching 
+                  ? 'bg-zinc-900/80 border-zinc-600 text-zinc-600 cursor-not-allowed' 
+                  : cooldownTime > 0
+                  ? 'bg-zinc-900/80 border-amber-600 text-amber-400/50 cursor-not-allowed' 
+                  : deviceStatus.isLimited
+                  ? 'bg-zinc-900/80 border-red-600 text-red-400 cursor-not-allowed' 
+                  : 'bg-black border-amber-400 text-amber-400 shadow-[0_20px_50px_rgba(251,191,36,0.3)]'
+              ]"
+            >
+              <div :class="{ 'animate-spin': isWatching }" class="mb-5">
+                <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-500' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'" />
+              </div>
+              <div class="text-center">
+                <span class="block text-base font-black uppercase tracking-widest leading-none" :class="isWatching ? 'text-zinc-500' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'">
+                  {{ buttonText }}
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
 
 
