@@ -1,4 +1,4 @@
-package com.mijingxingzuo.app;
+package com.qingxujifen.app;
 
 import android.app.Application;
 import android.content.Context;
@@ -39,7 +39,7 @@ public class MainApplication extends Application {
         
         TTAdConfig.Builder configBuilder = new TTAdConfig.Builder()
                 .appId(APP_ID)
-                .appName("秘境星座")
+                .appName("轻序计分")
                 .allowShowNotify(true)
                 .debug(false)
                 .supportMultiProcess(false)

@@ -1,4 +1,4 @@
-package com.mijingxingzuo.app;
+package com.qingxujifen.app;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

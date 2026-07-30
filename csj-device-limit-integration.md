@@ -21,13 +21,13 @@ export const getDeviceId = (): string => {
 };
 
 export const getPackageName = (): string => {
-  return 'com.mijingxingzuo.app';
+  return 'com.qingxujifen.app';
 };
 ```
 
 **关键说明**：
 - `getDeviceId()`：获取设备ID，localStorage key 使用 `csj_deviceId`（与百度系统的 `deviceId` 隔离）
-- `getPackageName()`：获取应用包名，固定为 `com.mijingxingzuo.app`
+- `getPackageName()`：获取应用包名，固定为 `com.qingxujifen.app`
 - deviceId 格式：`csj_device_{时间戳}_{随机字符串}`
 - 一旦生成，同一设备上保持不变（除非用户清除本地存储或恢复出厂设置）
 
@@ -48,7 +48,7 @@ export async function checkEmployee(employeeId: string, deviceId?: string, packa
 { "employeeId": "8202" }
 
 // 修改后
-{ "employeeId": "8202", "deviceId": "csj_device_1735043770523_c89qhuhh4", "packageName": "com.mijingxingzuo.app" }
+{ "employeeId": "8202", "deviceId": "csj_device_1735043770523_c89qhuhh4", "packageName": "com.qingxujifen.app" }
 ```
 
 **接口地址**：`POST /api/employee/check`
@@ -82,14 +82,14 @@ if (response.code === 'DEVICE_LIMIT_EXCEEDED') {
 {
   "employeeId": "8202",
   "deviceId": "csj_device_1735043770523_c89qhuhh4",
-  "packageName": "com.mijingxingzuo.app"
+  "packageName": "com.qingxujifen.app"
 }
 ```
 
 **字段说明**：
 - `employeeId`：员工工号（必填）
 - `deviceId`：设备ID，格式为 `csj_device_{timestamp}_{random}`（必填）
-- `packageName`：应用包名，固定为 `com.mijingxingzuo.app`（必填）
+- `packageName`：应用包名，固定为 `com.qingxujifen.app`（必填）
 
 **成功响应**（设备数校验通过）：
 ```json
@@ -217,7 +217,7 @@ Content-Type: application/json
 {
   "employeeId": "8202",
   "deviceId": "csj_device_1735043770523_c89qhuhh4",
-  "packageName": "com.mijingxingzuo.app"
+  "packageName": "com.qingxujifen.app"
 }
 ```
 
