@@ -48,6 +48,40 @@ const error = ref('');
 const isWatching = ref(false);
 const showAllRecords = ref(false);
 
+// 广告按钮冷却时间（30秒）
+const COOLDOWN_DURATION = 30;
+const cooldownTime = ref(0);
+let cooldownTimer: number | null = null;
+
+const startCooldown = () => {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer);
+    cooldownTimer = null;
+  }
+  cooldownTime.value = COOLDOWN_DURATION;
+  cooldownTimer = window.setInterval(() => {
+    if (cooldownTime.value > 0) {
+      cooldownTime.value--;
+    } else {
+      if (cooldownTimer) {
+        clearInterval(cooldownTimer);
+        cooldownTimer = null;
+      }
+    }
+  }, 1000);
+};
+
+const isButtonDisabled = computed(() => {
+  return isWatching.value || deviceStatus.value.isLimited || cooldownTime.value > 0;
+});
+
+const buttonText = computed(() => {
+  if (isWatching.value) return '正在加载';
+  if (deviceStatus.value.isLimited) return '设备价值过低';
+  if (cooldownTime.value > 0) return `${cooldownTime.value}秒后可领`;
+  return '点击赚取金币';
+});
+
 // 福利抽奖次数
 const welfareLotteryChances = ref(0);
 
@@ -687,6 +721,11 @@ onUnmounted(() => {
     clearInterval(syncInterval);
     syncInterval = null;
   }
+  // 清理冷却定时器
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer);
+    cooldownTimer = null;
+  }
   // 移除事件监听
   document.removeEventListener('visibilitychange', handleVisibilityChange);
   // 清理广告调试日志监听器
@@ -1074,7 +1113,10 @@ const loadGoldRecords = async () => {
 
 // 处理广告观看
 const handleWatchAd = async () => {
-  if (isWatching.value || !empId.value || !userId.value) return;
+  if (isButtonDisabled.value || !empId.value || !userId.value) return;
+  
+  // 启动30秒冷却时间
+  startCooldown();
   
   // 检查设备状态
   await loadDeviceStatus();
@@ -1728,22 +1770,24 @@ const submitWithdraw = async () => {
           
           <button
             @click="handleWatchAd"
-            :disabled="isWatching || deviceStatus.isLimited"
+            :disabled="isButtonDisabled"
             class="relative w-48 h-48 rounded-full flex flex-col items-center justify-center transition-all active:scale-90 border-2"
             :class="[
               isWatching 
                 ? 'bg-zinc-900/80 border-zinc-800 text-zinc-600 cursor-not-allowed' 
+                : cooldownTime > 0
+                ? 'bg-zinc-900/80 border-amber-800/50 text-amber-400/50 cursor-not-allowed' 
                 : deviceStatus.isLimited
                 ? 'bg-zinc-900/80 border-red-800/50 text-red-400 cursor-not-allowed' 
                 : 'bg-black border-white/10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:border-emerald-500/50'
             ]"
           >
             <div :class="{ 'animate-spin': isWatching }" class="mb-5">
-              <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-700' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'" />
+              <PlayCircle class="w-16 h-16" :class="isWatching ? 'text-zinc-700' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'" />
             </div>
             <div class="text-center">
-              <span class="block text-base font-black uppercase tracking-widest leading-none" :class="isWatching ? 'text-zinc-700' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'">
-                {{ isWatching ? '正在加载' : deviceStatus.isLimited ? '设备价值过低' : '点击赚取金币' }}
+              <span class="block text-base font-black uppercase tracking-widest leading-none" :class="isWatching ? 'text-zinc-700' : cooldownTime > 0 ? 'text-amber-400/50' : deviceStatus.isLimited ? 'text-red-400' : 'text-amber-400'">
+                {{ buttonText }}
               </span>
             </div>
           </button>
@@ -1751,7 +1795,7 @@ const submitWithdraw = async () => {
 
 
         <p class="mt-4 text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-medium">
-          {{ isWatching ? '正在为您匹配优质广告资源' : deviceStatus.isLimited ? '设备已被限制' : '广告激励已就绪' }}
+          {{ isWatching ? '正在为您匹配优质广告资源' : cooldownTime > 0 ? `请等待 ${cooldownTime} 秒` : deviceStatus.isLimited ? '设备已被限制' : '广告激励已就绪' }}
         </p>
         
         <!-- 设备限制提示 -->
