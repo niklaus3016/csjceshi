@@ -22,10 +22,10 @@ task deleteAdaptiveIconConfigs {
 preBuild.dependsOn deleteAdaptiveIconConfigs
 
 android { 
-    namespace = "com.qingxujifen.app" 
+    namespace = "com.mijingxingzuo.app" 
     compileSdk = rootProject.ext.compileSdkVersion 
     defaultConfig { 
-        applicationId "com.qingxujifen.app" 
+        applicationId "com.mijingxingzuo.app" 
         minSdkVersion rootProject.ext.minSdkVersion 
         targetSdkVersion rootProject.ext.targetSdkVersion 
         versionCode 1 

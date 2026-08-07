@@ -18,7 +18,7 @@ import java.io.InputStreamReader;
 public class MainApplication extends Application {
 
     private static final String TAG = "MainApplication";
-    private static final String APP_ID = "5858423";
+    private static final String APP_ID = "5860455";
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -78,7 +78,7 @@ public class MainApplication extends Application {
     
     private JSONObject loadLocalConfig() {
         try {
-            InputStream is = getAssets().open("site_config_5858423.json");
+            InputStream is = getAssets().open("site_config_5860455.json");
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             StringBuilder sb = new StringBuilder();
             String line;
