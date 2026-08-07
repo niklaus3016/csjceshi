@@ -1,4 +1,4 @@
-package com.qingxujifen.app;
+package com.mijingxingzuo.app;
 
 import android.app.Application;
 import android.content.Context;
