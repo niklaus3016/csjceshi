@@ -7,3 +7,9 @@ android/app/build/
 android/build/
 *.apk
 *.aab
+
+# SDK 解压文件夹
+Android_sdk_*/
+qitaapp/
+csjdemo/
+demo/
