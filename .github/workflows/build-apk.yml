@@ -43,6 +43,9 @@ jobs:
     - name: Sync to Android platform
       run: npx cap sync android
       
+    - name: Clean build cache
+      run: cd android && ./gradlew clean
+      
     - name: Decode keystore for debug build
       if: github.event_name != 'pull_request'
       env:
@@ -136,6 +139,9 @@ jobs:
       
     - name: Sync to Android platform
       run: npx cap sync android
+      
+    - name: Clean build cache
+      run: cd android && ./gradlew clean
       
     - name: Decode keystore
       if: github.event_name != 'pull_request'

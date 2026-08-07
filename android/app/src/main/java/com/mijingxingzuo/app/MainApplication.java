@@ -39,7 +39,7 @@ public class MainApplication extends Application {
         
         TTAdConfig.Builder configBuilder = new TTAdConfig.Builder()
                 .appId(APP_ID)
-                .appName("轻序计分")
+                .appName("秘境星座")
                 .allowShowNotify(true)
                 .debug(false)
                 .supportMultiProcess(false)
