@@ -6,6 +6,8 @@
 *.ap_
 *.aab
 !app/libs/*.aar
+!app/libs/adn/*.aar
+!app/libs/adapter/*.aar
 
 # Files for the ART/Dalvik VM
 *.dex
