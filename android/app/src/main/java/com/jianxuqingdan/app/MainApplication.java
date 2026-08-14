@@ -1,4 +1,4 @@
-package com.mijingxingzuo.app;
+package com.jianxuqingdan.app;
 
 import android.app.Application;
 import android.content.Context;
@@ -18,7 +18,7 @@ import java.io.InputStreamReader;
 public class MainApplication extends Application {
 
     private static final String TAG = "MainApplication";
-    private static final String APP_ID = "5860455";
+    private static final String APP_ID = "5867276";
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -39,7 +39,7 @@ public class MainApplication extends Application {
         
         TTAdConfig.Builder configBuilder = new TTAdConfig.Builder()
                 .appId(APP_ID)
-                .appName("秘境星座")
+                .appName("简序清单")
                 .allowShowNotify(true)
                 .debug(false)
                 .supportMultiProcess(false)
@@ -78,7 +78,7 @@ public class MainApplication extends Application {
     
     private JSONObject loadLocalConfig() {
         try {
-            InputStream is = getAssets().open("site_config_5860455.json");
+            InputStream is = getAssets().open("site_config_5867276.json");
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             StringBuilder sb = new StringBuilder();
             String line;
