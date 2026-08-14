@@ -112,6 +112,18 @@ export function useAdManager(config: AdConfig) {
         } catch (e) {
           console.warn('注册CsjAd调试日志监听器失败:', e);
         }
+
+        console.log('⏳ 等待 SDK 初始化稳定 3000ms（避免 840040 冷启动无配置）');
+        await delay(3000);
+        try {
+          const recheck = await CsjAd.isSdkReady();
+          if (recheck.ready) {
+            isAdSdkReady.value = true;
+            console.log('✅ 3s 延迟后确认 SDK 已就绪');
+          }
+        } catch (e) {
+          console.warn('延迟后再次检查 SDK 就绪状态失败:', e);
+        }
         
         return;
       }
@@ -150,9 +162,34 @@ export function useAdManager(config: AdConfig) {
     preloadListenerHandles.length = 0;
   };
 
+  const waitForSdkReady = async (timeoutMs: number = 10000): Promise<boolean> => {
+    if (!isNativeApp()) return true;
+    if (isAdSdkReady.value) return true;
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const r = await CsjAd.isSdkReady();
+        if (r.ready) {
+          isAdSdkReady.value = true;
+          return true;
+        }
+      } catch (e) {
+        // 忽略
+      }
+      await delay(500);
+    }
+    return isAdSdkReady.value;
+  };
+
   const preloadRewardVideoAd = async (): Promise<void> => {
     if (!isNativeApp()) {
       console.log('非原生环境，跳过预缓存');
+      return;
+    }
+
+    const ready = await waitForSdkReady();
+    if (!ready) {
+      console.warn('🚫 预缓存跳过：SDK 未就绪，避免 840040');
       return;
     }
     
@@ -407,12 +444,21 @@ export function useAdManager(config: AdConfig) {
         reject(new Error('已有广告正在处理'));
         return;
       }
+
+      if (isNativeApp()) {
+        const ready = await waitForSdkReady();
+        if (!ready) {
+          reject(new Error('广告 SDK 未就绪，请稍后重试 (840040 保护)'));
+          return;
+        }
+      }
       
       isProcessing = true;
       
       console.log('========== 开始加载激励视频广告 ==========');
       console.log('所有广告位:', config.slotIds);
       console.log('是否原生环境:', isNativeApp());
+      console.log('SDK 是否已就绪:', isAdSdkReady.value);
       console.log('是否有预缓存广告:', !!preloadedSlotId);
       
       if (preloadedSlotId && isAdReady.value) {
